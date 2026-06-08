@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ShingieBot">
+<meta name="description" content="ShingieBot - AI Sports Betting Analyst powered by Google Gemini">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -699,14 +700,14 @@ body { display: flex; flex-direction: column; }
 <!-- ========== SETTINGS ========== -->
 <div id="settings-overlay" onclick="closeSettingsIfOutside(event)">
   <div class="settings-panel">
-    <div class="settings-title">⚙️ API Configuration</div>
+    <div class="settings-title">⚙️ Gemini API Key</div>
     <div class="settings-field">
       <div class="settings-label">Anthropic API Key</div>
-      <input type="password" class="settings-input" id="apiKeyInput" placeholder="sk-ant-...">
+      <input type="password" class="settings-input" id="apiKeyInput" placeholder="AIzaSy...">
       <div class="key-status" id="keyStatus">Not configured</div>
     </div>
     <div class="settings-field">
-      <div class="settings-label" style="color:var(--muted);font-size:11px;">Your API key is stored locally on this device only. Never sent anywhere except Anthropic's servers directly from your browser.</div>
+      <div class="settings-label" style="color:var(--muted);font-size:11px;">Your Gemini API key is stored locally on this device only. Never sent anywhere except Google's servers directly from your browser. Get a free key at aistudio.google.com</div>
     </div>
     <button class="settings-save" onclick="saveSettings()">💾 SAVE KEY</button>
     <button class="settings-close" onclick="closeSettings()">CLOSE</button>
@@ -1278,21 +1279,22 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 60000);
   let response;
+  // Using Google Gemini free API
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   try {
-    response = await fetch('https://api.anthropic.com/v1/messages', {
+    response = await fetch(geminiUrl, {
       method: 'POST',
       signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: maxTokens || 3000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: maxTokens || 3000,
+          responseMimeType: 'application/json'
+        }
       })
     });
   } catch(err) {
@@ -1302,12 +1304,13 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
   }
   clearTimeout(timeoutId);
   if (!response.ok) {
-    let msg = 'API error ' + response.status;
+    let msg = 'Gemini API error ' + response.status;
     try { const d = await response.json(); msg = d.error?.message || msg; } catch(e) {}
     throw new Error(msg);
   }
   const data = await response.json();
-  let raw = data.content.map(b => b.text || '').join('');
+  let raw = '';
+  try { raw = data.candidates[0].content.parts[0].text; } catch(e) { throw new Error('Empty response from Gemini'); }
   // Strip markdown code blocks
   raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   // Try direct parse first
@@ -2568,7 +2571,7 @@ async function init() {
   updateDateDisplay();
   
   // Load API key
-  state.apiKey = loadData('shingiebot_apikey') || '';
+  state.apiKey = loadData('shingiebot_apikey') || ''; // Gemini API key
   
   // Load fixtures
   try {

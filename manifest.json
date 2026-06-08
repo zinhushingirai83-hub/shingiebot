@@ -1,0 +1,28 @@
+{
+  "name": "ShingieBot ⚽ — Football Betting Analyst",
+  "short_name": "ShingieBot",
+  "description": "Elite AI football betting analyst for Shingirai Zinhu. Smart slip generation with Porto Rule, Motivation Analysis, and real-time live scores.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0A0E1A",
+  "background_color": "#0A0E1A",
+  "lang": "en",
+  "categories": ["sports", "utilities"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0A0E1A">
+<title>ShingieBot — Setup Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0A0E1A; color:#E8EAF6; font-family:'Rajdhani',sans-serif; padding:20px 16px 40px; max-width:480px; margin:0 auto; }
+.logo { font-family:'Bebas Neue',cursive; font-size:36px; letter-spacing:3px; color:#00E676; margin-bottom:4px; }
+.logo span { color:#448AFF; }
+.subtitle { color:#7986A0; font-size:14px; margin-bottom:28px; font-family:'JetBrains Mono',monospace; }
+h2 { font-family:'Bebas Neue',cursive; font-size:22px; letter-spacing:1px; margin:24px 0 12px; color:#E8EAF6; }
+.step {
+  background:#141929; border:1px solid #1e2a45; border-radius:12px;
+  padding:14px 16px; margin-bottom:10px;
+}
+.step-num { font-family:'Bebas Neue',cursive; font-size:28px; color:#00E676; float:left; margin-right:10px; line-height:1; }
+.step-title { font-size:16px; font-weight:700; margin-bottom:4px; }
+.step-desc { font-size:13px; color:#7986A0; line-height:1.5; clear:both; }
+.step-desc a { color:#448AFF; }
+.code {
+  background:#0d1120; border:1px solid #1e2a45; border-radius:8px;
+  padding:10px 12px; margin:8px 0; font-family:'JetBrains Mono',monospace;
+  font-size:12px; color:#00E676; word-break:break-all;
+}
+.warn-box {
+  background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.3);
+  border-radius:10px; padding:12px 14px; margin-bottom:16px;
+  font-size:13px; color:#FFB300; line-height:1.5;
+}
+.safe-box {
+  background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2);
+  border-radius:10px; padding:12px 14px; margin-bottom:16px;
+  font-size:13px; color:#00E676; line-height:1.5;
+}
+.launch-btn {
+  display:block; width:100%; background:#00E676; color:#000;
+  border:none; border-radius:12px; padding:16px; text-align:center;
+  font-family:'Bebas Neue',cursive; font-size:24px; letter-spacing:2px;
+  text-decoration:none; margin-top:24px;
+}
+.rule-list { list-style:none; }
+.rule-list li { padding:6px 0; font-size:13px; border-bottom:1px solid #1e2a45; }
+.rule-list li:last-child { border:none; }
+.rule-list li span { color:#FF5252; font-weight:700; margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="logo">Shingie<span>Bot</span> ⚽</div>
+<div class="subtitle">Elite AI Football Betting Analyst — Setup Guide</div>
+
+<div class="safe-box">
+  ✅ All your data (API key, slips, preferences) is stored ONLY on your device. Nothing is sent to any server except directly to Anthropic's API and TheSportsDB for fixtures.
+</div>
+
+<h2>📱 Install as PWA on Samsung M33</h2>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-title">Open in Chrome</div>
+  <div class="step-desc">Make sure you're using Google Chrome on your Samsung M33. Open the ShingieBot URL in Chrome.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-title">Add to Home Screen</div>
+  <div class="step-desc">Tap the three dots menu (⋮) in Chrome → tap "Add to Home screen" → tap "Add". ShingieBot will appear on your home screen like an app.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-title">Get Your Anthropic API Key</div>
+  <div class="step-desc">
+    Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → sign up or log in → click "API Keys" → create a new key. Copy it.
+    <div class="code">sk-ant-api03-...</div>
+    You need to add credit to your Anthropic account. Analysis costs roughly $0.01–$0.03 per slip generation.
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-title">Enter API Key in ShingieBot</div>
+  <div class="step-desc">Open ShingieBot → tap the "API" button in the top right → paste your key → tap "SAVE KEY". Analysis will begin immediately.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-title">Daily Routine</div>
+  <div class="step-desc">Open the app every morning. Your 1.5 SAFE slip generates automatically for today's matches. Check the FIRE tab for recovery. On Mondays, the WEEKLY slip generates for the full week.</div>
+</div>
+
+<h2>⚡ Shingirai's Rules Built In</h2>
+<ul class="rule-list">
+  <li><span>PORTO RULE</span> Never picks champions with nothing to play for</li>
+  <li><span>AC MILAN RULE</span> Avoids big clubs in must-win pressure games at home</li>
+  <li><span>INVERNESS RULE</span> No Division 2 or lower teams as bankers</li>
+  <li><span>DERBY RULE</span> Zero derbies in safe slips</li>
+  <li><span>ROTATION RULE</span> Detects fixture congestion automatically</li>
+  <li><span>MOTIVATION RULE</span> Checks WHY a team would not win</li>
+</ul>
+
+<div class="warn-box" style="margin-top:20px;">
+  ⚠️ Gambling involves risk. ShingieBot is an analysis tool. Never bet more than you can afford to lose. Recommended stakes: $10–$20 (SAFE), $2–$3 (FIRE), $1–$2 (WEEKLY).
+</div>
+
+<a href="index.html" class="launch-btn">🚀 LAUNCH SHINGIEBOT</a>
+
+</body>
+</html>

@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- ShingieBot v2.5 - 2026-06-01 -->
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0A0E1A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShingieBot">
+<meta name="description" content="ShingieBot - AI Sports Betting Analyst powered by Google Gemini">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ShingieBot ⚽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0E1A;
+  --card: #141929;
+  --card2: #1a2035;
+  --border: #1e2a45;
+  --safe: #00E676;
+  --daily: #448AFF;
+  --fire: #FF5252;
+  --weekly: #CE93D8;
+  --text: #E8EAF6;
+  --muted: #7986A0;
+  --warn: #FFB300;
+  --danger: #FF1744;
+  --win: #00E676;
+  --draw: #FFD600;
+  --loss: #FF5252;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 16px; overflow-x: hidden; }
+body { display: flex; flex-direction: column; }
+
+/* ======= HEADER ======= */
+#app-header {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(180deg, #0d1120 0%, #0A0E1A 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px 6px;
+}
+.app-brand { display: flex; align-items: center; gap: 8px; }
+.app-logo { font-family: 'Bebas Neue', cursive; font-size: 26px; letter-spacing: 2px; color: var(--safe); line-height: 1; }
+.app-logo span { color: var(--daily); }
+.header-meta { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.refresh-btn {
+  background: var(--card2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 6px 12px; font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;
+  transition: all 0.2s;
+}
+.refresh-btn:active { background: var(--border); transform: scale(0.96); }
+.refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* DATE STRIP */
+.date-strip {
+  background: linear-gradient(90deg, #0f1526 0%, #141c30 100%);
+  padding: 7px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.date-main { font-family: 'Bebas Neue', cursive; font-size: 18px; letter-spacing: 1px; color: var(--text); }
+.date-week { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.fixture-count {
+  background: var(--safe); color: #000; font-size: 11px; font-weight: 700;
+  border-radius: 12px; padding: 2px 8px; font-family: 'JetBrains Mono', monospace;
+}
+
+/* TABS */
+.tabs {
+  display: flex; gap: 0; padding: 0;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 1; min-width: 72px; padding: 9px 6px 8px;
+  text-align: center; cursor: pointer; position: relative;
+  font-family: 'Bebas Neue', cursive; font-size: 14px; letter-spacing: 0.5px;
+  color: var(--muted); transition: color 0.2s; user-select: none;
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+}
+.tab.active { color: var(--text); }
+.tab[data-id="safe"].active { border-color: var(--safe); color: var(--safe); }
+.tab[data-id="daily"].active { border-color: var(--daily); color: var(--daily); }
+.tab[data-id="fire"].active { border-color: var(--fire); color: var(--fire); }
+.tab[data-id="weekly"].active { border-color: var(--weekly); color: var(--weekly); }
+.tab-label { display: block; font-size: 11px; margin-bottom: 1px; }
+.tab-emoji { font-size: 14px; display: block; }
+.tab-dot {
+  width: 6px; height: 6px; border-radius: 50%; margin: 3px auto 0;
+  background: var(--border);
+}
+.tab-dot.ready { background: var(--safe); box-shadow: 0 0 6px var(--safe); }
+.tab-dot.loading { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
+.tab-dot.error { background: var(--fire); }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* ======= MAIN CONTENT ======= */
+#main { flex: 1; overflow-y: auto; padding: 0 0 90px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* SCOPE BANNER */
+.scope-banner {
+  margin: 12px 12px 0;
+  border-radius: 10px; padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px;
+}
+.scope-banner.safe { background: rgba(0,230,118,0.08); border: 1px solid rgba(0,230,118,0.2); }
+.scope-banner.daily { background: rgba(68,138,255,0.08); border: 1px solid rgba(68,138,255,0.2); }
+.scope-banner.fire { background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.2); }
+.scope-banner.weekly { background: rgba(206,147,216,0.08); border: 1px solid rgba(206,147,216,0.2); }
+.scope-label { font-weight: 700; font-size: 13px; }
+.scope-label.safe { color: var(--safe); }
+.scope-label.daily { color: var(--daily); }
+.scope-label.fire { color: var(--fire); }
+.scope-label.weekly { color: var(--weekly); }
+.scope-desc { color: var(--muted); font-size: 11px; margin-top: 1px; }
+
+/* SLIP SUMMARY CARD */
+.slip-summary {
+  margin: 10px 12px;
+  background: var(--card); border-radius: 14px;
+  border: 1px solid var(--border); overflow: hidden;
+}
+.summary-header {
+  padding: 12px 14px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.summary-title { font-family: 'Bebas Neue', cursive; font-size: 20px; letter-spacing: 1px; }
+.risk-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+}
+.risk-VERY_SAFE { background: rgba(0,230,118,0.15); color: var(--safe); border: 1px solid rgba(0,230,118,0.3); }
+.risk-SAFE { background: rgba(68,138,255,0.15); color: var(--daily); border: 1px solid rgba(68,138,255,0.3); }
+.risk-MODERATE { background: rgba(255,179,0,0.15); color: var(--warn); border: 1px solid rgba(255,179,0,0.3); }
+.risk-AGGRESSIVE { background: rgba(255,82,82,0.15); color: var(--fire); border: 1px solid rgba(255,82,82,0.3); }
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  padding: 10px 14px; gap: 8px;
+}
+.summary-stat { text-align: center; }
+.stat-val { font-family: 'Bebas Neue', cursive; font-size: 26px; line-height: 1; }
+.stat-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+.stat-val.safe-color { color: var(--safe); }
+.stat-val.daily-color { color: var(--daily); }
+.stat-val.fire-color { color: var(--fire); }
+.stat-val.weekly-color { color: var(--weekly); }
+.summary-stake {
+  margin: 0 14px 10px;
+  background: var(--card2); border-radius: 8px; padding: 8px 12px;
+  font-size: 12px; color: var(--text);
+}
+.stake-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.date-verified {
+  margin: 0 14px 10px;
+  font-size: 10px; color: var(--safe); font-family: 'JetBrains Mono', monospace;
+}
+.analyst-note {
+  margin: 0 14px 12px;
+  font-size: 13px; color: var(--muted); font-style: italic; line-height: 1.4;
+  padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 8px;
+  border-left: 3px solid var(--border);
+}
+
+/* MATCH CARDS */
+.matches-container { padding: 0 12px; }
+.section-label {
+  font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+  padding: 8px 2px 4px; font-family: 'JetBrains Mono', monospace;
+}
+.match-card {
+  background: var(--card); border-radius: 14px; border: 1px solid var(--border);
+  margin-bottom: 10px; overflow: hidden; transition: border-color 0.3s;
+}
+.match-card.live { border-color: rgba(255,82,82,0.5); }
+.match-card.won { border-color: rgba(0,230,118,0.4); }
+.match-card.lost { border-color: rgba(255,82,82,0.3); }
+
+.card-top {
+  padding: 10px 12px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.match-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+.league-tag {
+  font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+  background: var(--card2); color: var(--muted); border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.date-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.date-badge.ok { background: rgba(0,230,118,0.15); color: var(--safe); border: 1px solid rgba(0,230,118,0.3); }
+.date-badge.bad { background: rgba(255,82,82,0.15); color: var(--fire); border: 1px solid rgba(255,82,82,0.3); }
+.card-badges { display: flex; gap: 4px; align-items: center; }
+.warn-badge {
+  font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 4px;
+  background: rgba(255,179,0,0.15); color: var(--warn); border: 1px solid rgba(255,179,0,0.3);
+  white-space: nowrap;
+}
+.live-badge {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+  background: rgba(255,82,82,0.2); color: var(--fire); border: 1px solid rgba(255,82,82,0.4);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.card-body { padding: 10px 12px; }
+.kickoff-time { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.teams-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.team-name { font-family: 'Bebas Neue', cursive; font-size: 18px; letter-spacing: 0.5px; flex: 1; }
+.team-name.home { text-align: left; }
+.team-name.away { text-align: right; }
+.score-box {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 10px; text-align: center; min-width: 60px;
+}
+.score-box.live { border-color: rgba(255,82,82,0.5); background: rgba(255,82,82,0.08); }
+.score-box.ft { border-color: rgba(0,230,118,0.3); }
+.score-nums { font-family: 'Bebas Neue', cursive; font-size: 20px; color: var(--text); letter-spacing: 2px; }
+.score-label { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.vs-text { font-family: 'Bebas Neue', cursive; font-size: 14px; color: var(--muted); }
+
+.pick-row {
+  background: var(--card2); border-radius: 10px; padding: 8px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; border: 1px solid var(--border);
+}
+.pick-market { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.pick-outcome { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+.pick-odds { font-family: 'Bebas Neue', cursive; font-size: 22px; color: var(--warn); }
+
+.confidence-row { margin-bottom: 8px; }
+.conf-labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.conf-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.conf-pct { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; }
+.conf-bar-bg { background: var(--border); border-radius: 4px; height: 5px; overflow: hidden; }
+.conf-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+.key-fact { font-size: 12px; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+.key-fact-icon { color: var(--daily); margin-right: 4px; }
+.card-warning { font-size: 11px; color: var(--warn); line-height: 1.4; margin-top: 4px; }
+.card-warning-icon { margin-right: 4px; }
+
+/* EXPANDABLE ANALYSIS */
+.expand-btn {
+  width: 100%; padding: 8px 12px; background: none; border: none; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 11px; font-family: 'Rajdhani', sans-serif; font-weight: 600;
+  text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.expand-btn:active { background: rgba(255,255,255,0.03); }
+.expand-arrow { transition: transform 0.2s; font-size: 10px; }
+.expand-arrow.open { transform: rotate(180deg); }
+.analysis-panel {
+  display: none; padding: 10px 12px 12px; border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+}
+.analysis-panel.open { display: block; }
+.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.analysis-item { background: var(--card2); border-radius: 8px; padding: 7px 10px; }
+.analysis-item-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.analysis-item-val { font-size: 13px; font-weight: 700; }
+.motivation-CRITICAL { color: #FF6E40; }
+.motivation-HIGH { color: var(--daily); }
+.motivation-MEDIUM { color: var(--warn); }
+.motivation-LOW { color: var(--muted); }
+.rotation-HIGH { color: var(--fire); }
+.rotation-MEDIUM { color: var(--warn); }
+.rotation-LOW { color: var(--safe); }
+.opposition-DOMINANT { color: var(--fire); }
+.opposition-STRONG { color: var(--warn); }
+.opposition-EVEN { color: var(--muted); }
+.opposition-WEAK { color: var(--safe); }
+.opposition-VERY_WEAK { color: var(--win); }
+.form-row { display: flex; gap: 4px; margin-top: 6px; }
+.form-dot {
+  width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 10px; font-weight: 700;
+}
+.form-W { background: rgba(0,230,118,0.2); color: var(--win); border: 1px solid rgba(0,230,118,0.4); }
+.form-D { background: rgba(255,214,0,0.2); color: var(--draw); border: 1px solid rgba(255,214,0,0.4); }
+.form-L { background: rgba(255,82,82,0.2); color: var(--loss); border: 1px solid rgba(255,82,82,0.4); }
+.motivation-desc { font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 6px; }
+.fixture-imp { font-size: 12px; color: var(--warn); margin-top: 4px; font-weight: 600; }
+
+/* ======= LOADING STATE ======= */
+.loading-state { padding: 40px 20px; text-align: center; }
+.loader-ring {
+  width: 48px; height: 48px; border: 3px solid var(--border);
+  border-top-color: var(--safe); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+}
+.loading-text { font-size: 14px; color: var(--muted); }
+.loading-sub { font-size: 11px; color: var(--border); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+
+/* ERROR STATE */
+.error-state { padding: 32px 20px; text-align: center; }
+.error-icon { font-size: 40px; margin-bottom: 12px; }
+.error-title { font-family: 'Bebas Neue', cursive; font-size: 22px; color: var(--fire); margin-bottom: 8px; }
+.error-msg { font-size: 13px; color: var(--muted); line-height: 1.4; margin-bottom: 16px; }
+.retry-btn {
+  background: var(--fire); color: #fff; border: none; border-radius: 10px;
+  padding: 10px 24px; font-family: 'Bebas Neue', cursive; font-size: 18px;
+  letter-spacing: 1px; cursor: pointer;
+}
+.retry-btn:active { transform: scale(0.96); }
+
+/* EMPTY STATE */
+.empty-state { padding: 40px 20px; text-align: center; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-family: 'Bebas Neue', cursive; font-size: 20px; color: var(--muted); margin-bottom: 8px; }
+.empty-msg { font-size: 13px; color: var(--border); line-height: 1.4; }
+
+/* ======= BOTTOM BAR ======= */
+#bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: linear-gradient(0deg, #0d1120 0%, rgba(10,14,26,0.97) 100%);
+  border-top: 1px solid var(--border);
+  padding: 8px 14px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  backdrop-filter: blur(10px);
+}
+.bottom-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+.bottom-dots { display: flex; gap: 10px; align-items: center; }
+.bottom-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.bottom-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border);
+  transition: all 0.3s;
+}
+.bottom-dot.ready.safe { background: var(--safe); box-shadow: 0 0 8px rgba(0,230,118,0.6); }
+.bottom-dot.ready.daily { background: var(--daily); box-shadow: 0 0 8px rgba(68,138,255,0.6); }
+.bottom-dot.ready.fire { background: var(--fire); box-shadow: 0 0 8px rgba(255,82,82,0.6); }
+.bottom-dot.ready.weekly { background: var(--weekly); box-shadow: 0 0 8px rgba(206,147,216,0.6); }
+.bottom-dot.loading { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
+.bottom-dot-label { font-size: 8px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.ready-count { font-family: 'Bebas Neue', cursive; font-size: 16px; color: var(--safe); }
+
+/* RESULTS TRACKER */
+.tracker-header {
+  padding: 14px 12px 0;
+}
+.tracker-stats {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px; margin: 10px 12px;
+}
+.tracker-stat {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 8px; text-align: center;
+}
+.tracker-stat-val {
+  font-family: 'Bebas Neue', cursive; font-size: 26px; line-height: 1;
+}
+.tracker-stat-lbl {
+  font-size: 9px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-top: 2px;
+}
+.tracker-stat-val.green { color: var(--safe); }
+.tracker-stat-val.red { color: var(--fire); }
+.tracker-stat-val.yellow { color: var(--warn); }
+.tracker-stat-val.blue { color: var(--daily); }
+.result-entry {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; margin: 0 12px 10px; overflow: hidden;
+}
+.result-entry-header {
+  padding: 10px 12px; display: flex; justify-content: space-between;
+  align-items: center; border-bottom: 1px solid var(--border);
+}
+.result-slip-type {
+  font-family: 'Bebas Neue', cursive; font-size: 16px; letter-spacing: 0.5px;
+}
+.result-date { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.result-outcome {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.result-outcome.won { background: rgba(0,230,118,0.15); color: var(--safe); border: 1px solid rgba(0,230,118,0.3); }
+.result-outcome.lost { background: rgba(255,82,82,0.15); color: var(--fire); border: 1px solid rgba(255,82,82,0.3); }
+.result-outcome.pending { background: rgba(255,179,0,0.15); color: var(--warn); border: 1px solid rgba(255,179,0,0.3); }
+.result-legs { padding: 8px 12px; }
+.result-leg {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 12px;
+}
+.result-leg:last-child { border: none; }
+.result-leg-match { flex: 1; color: var(--text); }
+.result-leg-pick { color: var(--muted); font-size: 11px; margin: 0 8px; }
+.result-leg-status {
+  font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+}
+.result-leg-status.won { color: var(--safe); }
+.result-leg-status.lost { color: var(--fire); }
+.result-leg-status.pending { color: var(--warn); }
+.result-leg-odds { font-family: 'Bebas Neue', cursive; font-size: 15px; color: var(--warn); margin-left: 6px; }
+.result-footer {
+  padding: 8px 12px; background: rgba(0,0,0,0.2);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; border-top: 1px solid var(--border);
+}
+.result-odds { font-family: 'Bebas Neue', cursive; font-size: 18px; color: var(--warn); }
+.add-result-btn {
+  background: var(--card2); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+  font-family: 'Rajdhani', sans-serif; font-weight: 600;
+}
+.add-result-btn:active { background: var(--border); }
+.leg-status-select {
+  background: var(--card2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 3px 6px; font-size: 11px; cursor: pointer;
+}
+.tracker-empty {
+  padding: 50px 20px; text-align: center;
+}
+.tracker-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.tracker-empty-title { font-family: 'Bebas Neue', cursive; font-size: 22px; color: var(--muted); margin-bottom: 8px; }
+.tracker-empty-msg { font-size: 13px; color: var(--border); line-height: 1.5; }
+.slip-type-safe { color: var(--safe); }
+.slip-type-daily { color: var(--daily); }
+.slip-type-fire { color: var(--fire); }
+.slip-type-weekly { color: var(--weekly); }
+.win-rate-bar { height: 6px; background: var(--border); border-radius: 3px; margin: 6px 12px; overflow: hidden; }
+.win-rate-fill { height: 100%; background: linear-gradient(90deg, var(--safe), var(--daily)); border-radius: 3px; transition: width 0.8s; }
+.clear-tracker-btn {
+  margin: 4px 12px 16px; width: calc(100% - 24px);
+  background: var(--card2); border: 1px solid var(--border); color: var(--fire);
+  border-radius: 8px; padding: 8px; font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+/* LIVE RESULTS ENGINE */
+.match-status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; background: rgba(0,0,0,0.25);
+  border-top: 1px solid var(--border); font-size: 11px;
+}
+.status-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px; font-size: 10px;
+  font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+}
+.status-pill.pending {
+  background: rgba(255,179,0,0.12); color: var(--warn);
+  border: 1px solid rgba(255,179,0,0.3);
+}
+.status-pill.live {
+  background: rgba(255,82,82,0.15); color: var(--fire);
+  border: 1px solid rgba(255,82,82,0.4);
+  animation: pulse 1s ease-in-out infinite;
+}
+.status-pill.finished-won {
+  background: rgba(0,230,118,0.15); color: var(--safe);
+  border: 1px solid rgba(0,230,118,0.3);
+}
+.status-pill.finished-lost {
+  background: rgba(255,82,82,0.12); color: var(--fire);
+  border: 1px solid rgba(255,82,82,0.3);
+}
+.status-pill.finished-unknown {
+  background: rgba(120,140,180,0.12); color: var(--muted);
+  border: 1px solid var(--border);
+}
+.live-score-display {
+  font-family: 'Bebas Neue', cursive; font-size: 22px;
+  letter-spacing: 3px; color: var(--text);
+}
+.live-score-display.live-color { color: var(--fire); }
+.live-score-display.won-color { color: var(--safe); }
+.live-score-display.lost-color { color: var(--fire); }
+.live-minute { font-size: 10px; color: var(--fire); font-family: 'JetBrains Mono', monospace; }
+.result-outcome-label {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.result-outcome-label.won { background: rgba(0,230,118,0.15); color: var(--safe); }
+.result-outcome-label.lost { background: rgba(255,82,82,0.12); color: var(--fire); }
+.result-outcome-label.draw { background: rgba(255,214,0,0.12); color: var(--draw); }
+
+/* LIVE MATCH DASHBOARD */
+.live-dash-card {
+  background: var(--card); border-radius: 12px; margin: 0 12px 8px;
+  border: 1px solid var(--border); overflow: hidden;
+  transition: border-color 0.3s;
+}
+.live-dash-card.live { border-color: rgba(255,82,82,0.5); }
+.live-dash-card.won  { border-color: rgba(0,230,118,0.4); }
+.live-dash-card.lost { border-color: rgba(255,82,82,0.3); }
+.live-dash-card.void { border-color: rgba(255,179,0,0.3); }
+.live-dash-header {
+  padding: 8px 12px; display: flex; align-items: center;
+  justify-content: space-between; border-bottom: 1px solid var(--border);
+}
+.live-dash-teams {
+  font-family: 'Bebas Neue', cursive; font-size: 15px; letter-spacing: 0.5px;
+}
+.live-dash-score {
+  font-family: 'Bebas Neue', cursive; font-size: 20px; letter-spacing: 2px;
+  min-width: 70px; text-align: center;
+}
+.live-dash-score.live-score { color: var(--fire); animation: pulse 1.5s ease-in-out infinite; }
+.live-dash-score.ft-score { color: var(--safe); }
+.live-dash-score.pending-score { color: var(--muted); font-size: 14px; }
+.live-dash-footer {
+  padding: 6px 12px; display: flex; align-items: center;
+  justify-content: space-between; font-size: 11px;
+}
+.live-status-pill {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+}
+.live-status-pill.live   { background: rgba(255,82,82,0.2); color: var(--fire); border: 1px solid rgba(255,82,82,0.4); animation: pulse 1s ease-in-out infinite; }
+.live-status-pill.ft     { background: rgba(0,230,118,0.1); color: var(--safe); border: 1px solid rgba(0,230,118,0.2); }
+.live-status-pill.pending{ background: rgba(255,179,0,0.1); color: var(--warn); border: 1px solid rgba(255,179,0,0.2); }
+.live-status-pill.won    { background: rgba(0,230,118,0.2); color: var(--safe); border: 1px solid rgba(0,230,118,0.4); }
+.live-status-pill.lost   { background: rgba(255,82,82,0.2); color: var(--fire); border: 1px solid rgba(255,82,82,0.4); }
+.live-status-pill.void   { background: rgba(255,179,0,0.2); color: var(--warn); border: 1px solid rgba(255,179,0,0.4); }
+.slip-group-label {
+  padding: 10px 12px 4px;
+  font-family: 'Bebas Neue', cursive; font-size: 16px; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 8px;
+}
+.slip-summary-bar {
+  margin: 0 12px 10px; padding: 8px 12px;
+  background: var(--card); border-radius: 8px; border: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+}
+.live-refresh-note {
+  text-align: center; font-size: 10px; color: var(--muted);
+  font-family: 'JetBrains Mono', monospace; padding: 6px 0 16px;
+}
+
+/* SETTINGS PANEL */
+#settings-overlay {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8);
+  display: none; align-items: flex-end;
+}
+#settings-overlay.open { display: flex; }
+.settings-panel {
+  width: 100%; background: var(--card); border-radius: 20px 20px 0 0;
+  padding: 20px 16px 32px; border-top: 1px solid var(--border);
+  max-height: 80vh; overflow-y: auto;
+}
+.settings-title { font-family: 'Bebas Neue', cursive; font-size: 24px; letter-spacing: 1px; margin-bottom: 16px; }
+.settings-field { margin-bottom: 14px; }
+.settings-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.settings-input {
+  width: 100%; background: var(--card2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: 'Rajdhani', sans-serif;
+  outline: none;
+}
+.settings-input:focus { border-color: var(--daily); }
+.settings-save {
+  width: 100%; background: var(--safe); color: #000; border: none; border-radius: 10px;
+  padding: 12px; font-family: 'Bebas Neue', cursive; font-size: 20px; letter-spacing: 1px;
+  cursor: pointer; margin-top: 8px;
+}
+.settings-close {
+  width: 100%; background: var(--card2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px; font-family: 'Bebas Neue', cursive; font-size: 18px;
+  letter-spacing: 1px; cursor: pointer; margin-top: 8px;
+}
+.key-status { font-size: 11px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.key-status.set { color: var(--safe); }
+.key-status.notset { color: var(--fire); }
+
+/* SLIP PROGRESS */
+.slip-progress {
+  margin: 10px 12px 0;
+  background: var(--card); border-radius: 10px; padding: 10px 14px;
+  border: 1px solid var(--border); font-size: 12px;
+}
+.progress-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.progress-legs { display: flex; gap: 6px; flex-wrap: wrap; }
+.leg-dot {
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid var(--border);
+}
+.leg-dot.won { background: rgba(0,230,118,0.15); border-color: var(--safe); color: var(--safe); }
+.leg-dot.lost { background: rgba(255,82,82,0.15); border-color: var(--fire); color: var(--fire); }
+.leg-dot.live { background: rgba(255,179,0,0.15); border-color: var(--warn); color: var(--warn); animation: pulse 1s ease-in-out infinite; }
+.leg-dot.pending { background: var(--card2); color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div id="app-header">
+  <div class="header-top">
+    <div class="app-brand">
+      <div class="app-logo">Shingie<span>Bot</span> ⚽</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="refresh-btn" id="settingsBtn" onclick="openSettings()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        API
+      </button>
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+  <div class="date-strip">
+    <div>
+      <div class="date-main" id="headerDate">—</div>
+      <div class="date-week" id="headerWeek">Week: —</div>
+    </div>
+    <div class="fixture-count" id="fixtureCount">0 fixtures</div>
+  </div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-id="safe" onclick="switchTab('safe')">
+      <span class="tab-emoji">🟢</span>
+      <span class="tab-label">1.5 SAFE</span>
+      <div class="tab-dot" id="dot-safe"></div>
+    </div>
+    <div class="tab" data-id="daily" onclick="switchTab('daily')">
+      <span class="tab-emoji">🔵</span>
+      <span class="tab-label">2.0 DAILY</span>
+      <div class="tab-dot" id="dot-daily"></div>
+    </div>
+    <div class="tab" data-id="fire" onclick="switchTab('fire')">
+      <span class="tab-emoji">🔴</span>
+      <span class="tab-label">5.0 FIRE</span>
+      <div class="tab-dot" id="dot-fire"></div>
+    </div>
+    <div class="tab" data-id="weekly" onclick="switchTab('weekly')">
+      <span class="tab-emoji">🟣</span>
+      <span class="tab-label">WEEKLY</span>
+      <div class="tab-dot" id="dot-weekly"></div>
+    </div>
+    <div class="tab" data-id="live" onclick="switchTab('live')">
+      <span class="tab-emoji">📡</span>
+      <span class="tab-label">LIVE</span>
+      <div class="tab-dot" id="dot-live"></div>
+    </div>
+    <div class="tab" data-id="tracker" onclick="switchTab('tracker')">
+      <span class="tab-emoji">📊</span>
+      <span class="tab-label">AUDIT</span>
+      <div class="tab-dot" id="dot-tracker"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MAIN ========== -->
+<div id="main">
+  <div class="tab-panel active" id="panel-safe"></div>
+  <div class="tab-panel" id="panel-daily"></div>
+  <div class="tab-panel" id="panel-fire"></div>
+  <div class="tab-panel" id="panel-weekly"></div>
+  <div class="tab-panel" id="panel-live"></div>
+  <div class="tab-panel" id="panel-tracker"></div>
+</div>
+
+<!-- ========== BOTTOM BAR ========== -->
+<div id="bottom-bar">
+  <div class="bottom-date" id="bottomDate">—</div>
+  <div class="bottom-dots">
+    <div class="bottom-dot-wrap">
+      <div class="bottom-dot safe" id="bdot-safe"></div>
+      <div class="bottom-dot-label">SAFE</div>
+    </div>
+    <div class="bottom-dot-wrap">
+      <div class="bottom-dot daily" id="bdot-daily"></div>
+      <div class="bottom-dot-label">DAILY</div>
+    </div>
+    <div class="bottom-dot-wrap">
+      <div class="bottom-dot fire" id="bdot-fire"></div>
+      <div class="bottom-dot-label">FIRE</div>
+    </div>
+    <div class="bottom-dot-wrap">
+      <div class="bottom-dot weekly" id="bdot-weekly"></div>
+      <div class="bottom-dot-label">WEEKLY</div>
+    </div>
+  </div>
+  <div class="ready-count" id="readyCount">0 READY</div>
+</div>
+
+<!-- ========== SETTINGS ========== -->
+<div id="settings-overlay" onclick="closeSettingsIfOutside(event)">
+  <div class="settings-panel">
+    <div class="settings-title">⚙️ Gemini API Key</div>
+    <div class="settings-field">
+      <div class="settings-label">Anthropic API Key</div>
+      <input type="password" class="settings-input" id="apiKeyInput" placeholder="AIzaSy...">
+      <div class="key-status" id="keyStatus">Not configured</div>
+    </div>
+    <div class="settings-field">
+      <div class="settings-label" style="color:var(--muted);font-size:11px;">Your Gemini API key is stored locally on this device only. Never sent anywhere except Google's servers directly from your browser. Get a free key at aistudio.google.com</div>
+    </div>
+    <button class="settings-save" onclick="saveSettings()">💾 SAVE KEY</button>
+    <button class="settings-close" onclick="closeSettings()">CLOSE</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SHINGIEBOT CORE ENGINE
+// ============================================================
+
+const SLIP_CONFIG = {
+  safe: {
+    id: 'safe', label: '1.5 SAFE SLIP', color: 'safe', accentVar: '--safe',
+    targetOddsMin: 1.40, targetOddsMax: 1.70, legs: [3,5],
+    minConfidence: 76, stake: '$10–$20',
+    markets: ['Draw No Bet', 'Double Chance'],
+    riskProfile: 'VERY_SAFE',
+    scopeDesc: 'Football · Tennis · Basketball · Hockey — safest picks only.',
+    daily: true
+  },
+  daily: {
+    id: 'daily', label: '2.0 DAILY SLIP', color: 'daily', accentVar: '--daily',
+    targetOddsMin: 1.80, targetOddsMax: 2.20, legs: [4,6],
+    minConfidence: 76, stake: '$10–$15',
+    markets: ['Draw No Bet', 'Double Chance', 'Straight Win (odds < 1.30)'],
+    riskProfile: 'SAFE',
+    scopeDesc: 'Multi-sport working slip — consistent daily returns.',
+    daily: true
+  },
+  fire: {
+    id: 'fire', label: '5.0 FIRE SLIP', color: 'fire', accentVar: '--fire',
+    targetOddsMin: 4.50, targetOddsMax: 6.00, legs: [6,8],
+    minConfidence: 70, stake: '$2–$3 MAX',
+    markets: ['All markets allowed'],
+    riskProfile: 'AGGRESSIVE',
+    scopeDesc: 'Multi-sport recovery — any market, all sports.',
+    daily: true
+  },
+  weekly: {
+    id: 'weekly', label: 'WEEKLY 30 LONGBET', color: 'weekly', accentVar: '--weekly',
+    targetOddsMin: 50, targetOddsMax: 200, legs: [28,32],
+    minConfidence: 70, stake: '$1–$2 MAX',
+    markets: ['DNB 40%', 'Double Chance 35%', 'Straight Win 25%'],
+    riskProfile: 'MODERATE',
+    scopeDesc: 'Football + Tennis + Basketball + Hockey — Mon–Sun mega slip.',
+    daily: false
+  }
+};
+
+// State
+let state = {
+  today: '',
+  weekStart: '',
+  weekEnd: '',
+  fixtures: [],
+  slips: { safe: null, daily: null, fire: null, weekly: null },
+  slipStatus: { safe: 'idle', daily: 'idle', fire: 'idle', weekly: 'idle' },
+  activeTab: 'safe',
+  liveScores: {},
+  apiKey: '',
+  lastRefresh: null,
+  livePollingTimer: null,
+  usedMatches: []  // tracks matches used across all slips today — NO REPEATS
+};
+
+// ============================================================
+// DATE UTILITIES
+// ============================================================
+function getLocalDateStr() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function getLocalWeekBounds() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const diffToMon = (day === 0) ? -6 : 1 - day;
+  const mon = new Date(now); mon.setDate(now.getDate() + diffToMon);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => {
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  };
+  return { start: fmt(mon), end: fmt(sun) };
+}
+function formatDateDisplay(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+function utcToZimbabwe(utcTimeStr) {
+  // Convert UTC time to Zimbabwe UTC+2
+  if (!utcTimeStr) return '--:--';
+  const parts = utcTimeStr.split(':');
+  if (parts.length < 2) return utcTimeStr;
+  let h = parseInt(parts[0]) + 2;
+  if (h >= 24) h -= 24;
+  return `${String(h).padStart(2,'0')}:${parts[1]}`;
+}
+function getCurrentWeekMonday() {
+  return getLocalWeekBounds().start;
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function saveData(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+}
+function loadData(key) {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+}
+function getSlipKey(tabId, date) { return `shingiebot_${tabId}_${date}`; }
+function getWeeklyKey() { return 'shingiebot_weekly_v2'; }
+function getFixturesKey(date) { return `shingiebot_fixtures_${date}`; }
+
+// ============================================================
+// API — FIXTURES
+// ============================================================
+
+function isValidFixture(e) {
+  const league = (e.league || '').toLowerCase();
+  const home   = (e.home || '').toLowerCase();
+  const away   = (e.away || '').toLowerCase();
+  if (league.includes('simul') || league.includes('srl'))         return false;
+  if (league.includes('friendly'))                                  return false;
+  if (league.includes('reserve') || league.includes('youth'))      return false;
+  if (/u-?\d{2}/.test(league) || /u-?\d{2}/.test(home))          return false;
+  return true;
+}
+
+async function safeFetch(url, headers) {
+  try {
+    const opts = headers ? { headers } : {};
+    const r = await fetch(url, opts);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ---- PRIMARY SOURCE: API-Football (free, 100 calls/day, no key needed for basic) ----
+async function fetchFromAPIFootball(dateStr) {
+  // API-Football v3 — free tier, returns real fixtures worldwide
+  const url = `https://v3.football.api-sports.io/fixtures?date=${dateStr}`;
+  const data = await safeFetch(url, {
+    'x-rapidapi-host': 'v3.football.api-sports.io',
+    'x-rapidapi-key': 'free_tier_no_key_needed'
+  });
+
+  if (data && data.response && data.response.length > 0) {
+    return data.response.map(f => ({
+      idEvent: 'af_' + f.fixture.id,
+      strHomeTeam: f.teams.home.name,
+      strAwayTeam: f.teams.away.name,
+      strLeague: f.league.name,
+      strCountry: f.league.country,
+      dateEvent: f.fixture.date.split('T')[0],
+      strTime: f.fixture.date.split('T')[1].substring(0,5),
+      home: f.teams.home.name,
+      league: f.league.name
+    })).filter(e => e.dateEvent === dateStr && isValidFixture(e));
+  }
+  return [];
+}
+
+// ---- SOURCE 2: TheSportsDB general endpoint ----
+async function fetchFromSportsDB(dateStr) {
+  const data = await safeFetch(
+    `https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${dateStr}&s=Soccer`
+  );
+  return (data?.events || [])
+    .filter(e => e.dateEvent === dateStr && e.strSport === 'Soccer')
+    .map(e => ({ ...e, home: e.strHomeTeam, league: e.strLeague }))
+    .filter(isValidFixture);
+}
+
+// ---- SOURCE 3: TheSportsDB by specific leagues ----
+const PRIORITY_LEAGUES = [4480,4481,4482,4328,4335,4332,4331,4334,4337,4344,4418,4350,4354,4424,4425,4455,4456,4447,4448];
+
+async function fetchFromSportsDBLeagues(dateStr) {
+  const all = [];
+  const seen = new Set();
+  for (const id of PRIORITY_LEAGUES) {
+    const data = await safeFetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${dateStr}&l=${id}`);
+    for (const e of (data?.events || [])) {
+      if (e.dateEvent === dateStr && !seen.has(e.idEvent)) {
+        seen.add(e.idEvent);
+        all.push({ ...e, home: e.strHomeTeam, league: e.strLeague });
+      }
+    }
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return all.filter(isValidFixture);
+}
+
+// ---- SOURCE 4: AllSportsAPI (free, no key) ----
+async function fetchFromAllSports(dateStr) {
+  const data = await safeFetch(
+    `https://apiv2.allsportsapi.com/football/?met=Fixtures&APIkey=9e5b09b9a81a5010a7b8c20aa1c54b2e8e5d50da22a39f5bf7a65a0d4d7e9c5&from=${dateStr}&to=${dateStr}`
+  );
+  if (!data?.result) return [];
+  return data.result
+    .filter(m => m.event_date === dateStr)
+    .map(m => ({
+      idEvent: 'as_' + m.event_key,
+      strHomeTeam: m.event_home_team,
+      strAwayTeam: m.event_away_team,
+      strLeague: m.league_name,
+      strCountry: m.country_name,
+      dateEvent: m.event_date,
+      strTime: (m.event_time || '00:00') + ':00',
+      home: m.event_home_team,
+      league: m.league_name
+    }))
+    .filter(isValidFixture);
+}
+
+// ---- MAIN FETCH: tries all sources, merges unique results ----
+async function fetchFixtures(dateStr) {
+  const cacheKey = getFixturesKey(dateStr);
+  const cached = loadData(cacheKey);
+  if (cached && cached.ts && (Date.now() - cached.ts < 3600000) && (cached.fixtures||[]).length > 5) {
+    return cached.fixtures;
+  }
+
+  const seen = new Set();
+  let all = [];
+
+  function merge(fixtures) {
+    for (const f of (fixtures || [])) {
+      const key = `${f.strHomeTeam}|${f.strAwayTeam}|${f.dateEvent}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        all.push(f);
+      }
+    }
+  }
+
+  // Try all sources in parallel for speed
+  const [sportsDB, allSports] = await Promise.all([
+    fetchFromSportsDB(dateStr),
+    fetchFromAllSports(dateStr)
+  ]);
+
+  merge(sportsDB);
+  merge(allSports);
+
+  // If still thin, query individual leagues
+  if (all.length < 20) {
+    const leagueFixtures = await fetchFromSportsDBLeagues(dateStr);
+    merge(leagueFixtures);
+  }
+
+  saveData(cacheKey, { ts: Date.now(), fixtures: all });
+  return all;
+}
+
+// ============================================================
+// API — LIVE SCORES
+// ============================================================
+async function fetchWeekFixtures(weekStart, weekEnd) {
+  const cacheKey = 'shingiebot_weekfixtures_' + weekStart;
+  const cached = loadData(cacheKey);
+  if (cached && cached.ts && (Date.now() - cached.ts < 7200000) && (cached.fixtures||[]).length > 5) {
+    return cached.fixtures;
+  }
+
+  // Fetch today + tomorrow (what we can get from API)
+  // Claude will use its own knowledge to fill the rest of the week
+  const today = getLocalDateStr();
+  const tomorrow = new Date(today + 'T12:00:00');
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+
+  const [todayFix, tomorrowFix] = await Promise.all([
+    fetchFixtures(today),
+    fetchFixtures(tomorrowStr)
+  ]);
+
+  const all = [];
+  const seen = new Set();
+  for (const f of [...todayFix, ...tomorrowFix]) {
+    const key = `${f.strHomeTeam}|${f.strAwayTeam}|${f.dateEvent}`;
+    if (!seen.has(key)) { seen.add(key); all.push(f); }
+  }
+
+  saveData(cacheKey, { ts: Date.now(), fixtures: all });
+  return all;
+}
+
+async function fetchLiveScores() {
+  try {
+    // Fetch live soccer scores
+    const url = 'https://www.thesportsdb.com/api/v1/json/3/livescore.php?s=Soccer';
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.events) {
+      data.events.forEach(e => {
+        const key = `${e.strHomeTeam}|${e.strAwayTeam}`.toLowerCase();
+        const info = {
+          homeScore: e.intHomeScore,
+          awayScore: e.intAwayScore,
+          status: e.strStatus,
+          progress: e.strProgress || ''
+        };
+        state.liveScores[e.idEvent] = info;
+        state.liveScores[key] = info; // also index by team names
+      });
+    }
+  } catch(e) {}
+
+  // Also check completed matches from today using TheSportsDB
+  try {
+    const url2 = `https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${state.today}&s=Soccer`;
+    const resp2 = await fetch(url2);
+    const data2 = await resp2.json();
+    if (data2.events) {
+      data2.events.forEach(e => {
+        if (e.intHomeScore !== null && e.intHomeScore !== '') {
+          const key = `${e.strHomeTeam}|${e.strAwayTeam}`.toLowerCase();
+          const info = {
+            homeScore: e.intHomeScore,
+            awayScore: e.intAwayScore,
+            status: e.strStatus === 'Match Finished' ? 'FT' : e.strStatus,
+            progress: e.strProgress || ''
+          };
+          if (!state.liveScores[e.idEvent]) {
+            state.liveScores[e.idEvent] = info;
+            state.liveScores[key] = info;
+          }
+        }
+      });
+    }
+  } catch(e) {}
+
+  updateLiveMatchCards();
+  updateSlipProgress();
+  // Refresh live dashboard if active
+  if (state.activeTab === 'live') renderLiveDashboard();
+}
+
+// Get score for a match by team names (works across sports)
+function getMatchScore(match) {
+  const key = `${match.homeTeam}|${match.awayTeam}`.toLowerCase();
+  return state.liveScores[key] || state.liveScores[match.idEvent] || null;
+}
+
+// Auto-detect match status from current time vs kickoff time
+function getMatchTimeStatus(match) {
+  if (!match.matchDate || !match.matchTime) return 'pending';
+  try {
+    const matchDT = new Date(`${match.matchDate}T${match.matchTime}:00+02:00`); // Zimbabwe UTC+2
+    const now = new Date();
+    const diffMins = (now - matchDT) / 60000;
+    if (diffMins < 0) return 'pending';          // not started
+    if (diffMins < 115) return 'live';            // likely in play (up to 115 min for extra time)
+    return 'finished';                            // likely finished
+  } catch(e) { return 'pending'; }
+}
+
+// Update slip progress tracker based on live scores
+function updateSlipProgress() {
+  for (const tabId of ['safe','daily','fire','weekly']) {
+    const slip = state.slips[tabId];
+    if (!slip || !slip.slip) continue;
+    for (const match of slip.slip) {
+      const score = getMatchScore(match);
+      const timeStatus = getMatchTimeStatus(match);
+      if (score) {
+        match._score = score;
+        match._timeStatus = score.status === 'FT' ? 'finished' : (score.status === 'In Progress' ? 'live' : timeStatus);
+      } else {
+        match._timeStatus = timeStatus;
+      }
+    }
+  }
+}
+function startLivePolling() {
+  if (state.livePollingTimer) clearInterval(state.livePollingTimer);
+  state.livePollingTimer = setInterval(fetchLiveScores, 180000); // 3 min
+}
+
+// ============================================================
+// CLAUDE API — SLIP GENERATION
+// ============================================================
+function buildSystemPrompt(tabId) {
+  const today = state.today;
+  const weekStart = state.weekStart;
+  const weekEnd = state.weekEnd;
+  const isWeekly = tabId === 'weekly';
+
+  const dateRule = isWeekly
+    ? `DATE: Only picks from ${weekStart} to ${weekEnd}.`
+    : `DATE: Only picks for ${today}. Every matchDate MUST equal "${today}".`;
+
+  // Condensed rules - same logic, much shorter
+  return `You are ShingieBot, elite sports betting analyst for Shingirai Zinhu, Mutare Zimbabwe.
+Sports covered: Football, Tennis, Basketball, Hockey.
+${dateRule}
+
+RULES (apply all):
+1. DEAD RUBBER: Skip if result cannot change either team's position. Both teams secured/irrelevant = skip.
+2. POSITION SAFETY: At least ONE team must have title/European/relegation/promotion at stake.
+3. DERBY: Never in SAFE or DAILY slips. Derbies = unpredictable. Flag only for FIRE.
+4. ROTATION: Team with 3+ games in 7 days + big game in 72h = heavy rotation. -15% confidence.
+5. MOTIVATION: Motivation beats form. Relegation fighter at home > comfortable mid-table team.
+6. INJURY: Missing key players = -10-20% confidence. Severe crisis = skip in safe slips.
+7. CONGESTION: 3+ games in 7 days = physically vulnerable. Prefer fresher opponents.
+8. TRAVEL FATIGUE: Cross-timezone travel in 48h = reduced performance. Factor in.
+9. INTERNATIONAL BREAK: Match within 5 days of intl break = -8% confidence.
+10. WEATHER: Extreme conditions neutralize strong teams. -5% if adverse.
+11. HOME/AWAY BIAS: Turkey, Greece, Brazil, Argentina, Africa = strong home bias. Prefer home sides.
+12. HEAD-TO-HEAD: Consistent H2H patterns override current form. Factor in.
+13. NEUTRAL VENUE: Finals at neutral grounds = no home advantage. Adjust analysis.
+14. PORTO RULE: Champions who secured title REST ALL STARTERS. Never pick them.
+
+RISK SCORE per pick (0=safe, 100=dangerous):
+Derby=+20, Dead Rubber=+20, Rotation HIGH=+15, Key Injuries=+15, Intl Break=+10, Congestion=+10, Fatigue=+10, Weather=+8, Neutral Final=+5.
+SAFE slip: risk ≤ 20. DAILY: risk ≤ 35. FIRE: risk ≤ 60.
+
+CONFIDENCE adjustments:
++5% home fav, +5% DNB market, +3% critical motivation.
+-15% derby, -15% rotation HIGH, -10% dead rubber, -12% key injury, -8% intl break, -8% fatigue.
+Max 98%. Below 65% = avoid.
+
+MARKETS by sport:
+Football SAFE: Draw No Bet or Double Chance ONLY. No straight win.
+Football DAILY: DNB preferred, DC ok, straight win only if odds < 1.35.
+Football FIRE: All markets.
+Tennis/Basketball/Hockey: Match Winner or Handicap. No draws possible.
+
+KNOWN AVOID: Porto after title (rests all). Any team with final in 72h. Inverness CT as banker. Edinburgh Derby. Marseille away safe slips.
+
+PERSONALITY: Reference rules by name. "Dead Rubber Rule applied - skipped." "Porto Rule - avoided." Clean slip = "No red flags detected." Thin day = say so honestly.
+
+OUTPUT: Valid JSON only. No text before or after. No markdown.`;
+}
+
+
+function buildUserPrompt(tabId, fixtures) {
+  const cfg = SLIP_CONFIG[tabId];
+  const today = state.today;
+  const weekStart = state.weekStart;
+  const weekEnd = state.weekEnd;
+  const isWeekly = tabId === 'weekly';
+
+  const fixtureList = fixtures.slice(0, 100).map(f => ({
+    home: f.strHomeTeam || f.home,
+    away: f.strAwayTeam || f.away,
+    league: f.strLeague || f.league,
+    country: f.strCountry || f.country || '',
+    date: f.dateEvent,
+    time: f.strTime || '',
+    sport: f.strSport || 'Soccer'
+  }));
+
+  const schema = `{
+  "slip": [
+    {
+      "homeTeam": "string",
+      "awayTeam": "string",
+      "sport": "Football|Tennis|Basketball|Hockey",
+      "league": "string",
+      "country": "string",
+      "matchDate": "YYYY-MM-DD",
+      "matchTime": "HH:MM",
+      "market": "string",
+      "selectedOutcome": "string",
+      "odds": 1.25,
+      "confidence": 95,
+      "riskScore": 10,
+      "factors": {
+        "motivation": "string",
+        "motivationLevel": "CRITICAL|HIGH|MEDIUM|LOW",
+        "form": "WWWWD",
+        "oppositionStrength": "DOMINANT|STRONG|EVEN|WEAK|VERY_WEAK",
+        "rotationRisk": "HIGH|MEDIUM|LOW",
+        "isDerby": false,
+        "isDeadRubber": false,
+        "isFinal": false,
+        "fixtureImportance": "string",
+        "keyFact": "string",
+        "rulesApplied": ["Dead Rubber Rule", "Rotation Risk Rule"]
+      },
+      "warning": null
+    }
+  ],
+  "combinedOdds": 1.85,
+  "averageConfidence": 94,
+  "stakeRecommendation": "string",
+  "analystNote": "string",
+  "riskLevel": "VERY_SAFE|SAFE|MODERATE|AGGRESSIVE",
+  "dateVerified": "string"
+}`;
+
+  let slipInstructions = '';
+  if (tabId === 'safe') {
+    slipInstructions = `SLIP TYPE: 1.5 SAFE SLIP — The Bread and Butter
+CRITICAL: Every pick must be UNIQUE — not used in any other slip today. Check the exclusion list above.
+Select 2-5 picks across ANY sport (Football, Tennis, Basketball, Hockey).
+Target combined odds 1.40-1.70. Minimum confidence 76%. Risk score MUST be ≤ 20.
+FOOTBALL markets: Draw No Bet or Double Chance ONLY. Never straight win.
+TENNIS/BASKETBALL/HOCKEY: Match Winner market only. Top seed vs low seed preferred.
+Absolutely forbidden: derbies, dead rubbers, high rotation risk, risk score > 20.
+On thin days: reduce to 2 legs. Include tennis or basketball if football is scarce.
+This is Shingirai's bread and butter. Family depends on this. Zero tolerance for high-risk picks.`;
+  } else if (tabId === 'daily') {
+    slipInstructions = `SLIP TYPE: 2.0 DAILY SLIP — Working Slip
+CRITICAL: Every pick must be UNIQUE — not used in any other slip today. Check the exclusion list above.
+Select 3-6 picks across ANY sport. Target combined odds 1.80-2.20.
+Minimum confidence 76%. Risk score MUST be ≤ 35.
+FOOTBALL: DNB preferred, Double Chance acceptable, Straight Win if odds < 1.35.
+TENNIS/BASKETBALL/HOCKEY: Match Winner or Handicap markets.
+Forbidden: derbies, confirmed dead rubbers, risk score > 35.
+Mix sports if football fixtures are scarce. Tennis Grand Slams and ATP Masters are reliable.`;
+  } else if (tabId === 'fire') {
+    slipInstructions = `SLIP TYPE: 5.0 FIRE SLIP — Recovery Slip
+CRITICAL: Every pick must be UNIQUE — not used in any other slip today. Check the exclusion list above.
+Select 3-8 picks across ANY sport. Target combined odds 4.50-6.00.
+Minimum confidence 65%. Risk score up to 60 allowed.
+ALL markets allowed: straight wins, BTTS, Over/Under, Asian Handicap, Match Winner.
+Mix sports freely. Include exciting matchups from tennis, basketball, hockey.
+Small stake ONLY — $2-3 maximum. This is recovery and dream money.`;
+  } else if (tabId === 'weekly') {
+    slipInstructions = `SLIP TYPE: WEEKLY 30 LONGBET — The Dream
+Select 28-32 picks spanning ${weekStart} to ${weekEnd}.
+Distribute 4-5 picks per day across all 7 days.
+Target combined odds 50-200+. Minimum confidence 75%. Risk score ≤ 50.
+MARKETS: Football DNB 35%, Double Chance 25%, Straight Win 15%, Tennis/Basketball/Hockey Match Winner 25%.
+Mix sports across the week — use tennis Grand Slams, NBA playoffs, NHL games as they are scheduled.
+CRITICAL: Use your football knowledge AND knowledge of tennis/basketball/hockey schedules to fill all 7 days.
+Set correct matchDate for each pick within ${weekStart} to ${weekEnd}.
+$1-2 stake maximum. Life-changing potential.`;
+  }
+
+  // Build exclusion list from already-used matches
+  const excluded = state.usedMatches.length > 0
+    ? `\n\nSTRICT EXCLUSION LIST — These matches are already used in other slips today. DO NOT pick any of them under any circumstances:\n${state.usedMatches.map((m,i) => `${i+1}. ${m}`).join('\n')}`
+    : '';
+
+  const fixtureSection = fixtureList.length > 0
+    ? `FIXTURES FROM API (${fixtureList.length} matches found for today/this period):
+${JSON.stringify(fixtureList, null, 2)}
+
+Use these fixtures as your primary source. You may ALSO use your own knowledge of scheduled matches this ${isWeekly ? 'week' : 'day'} for sports not in this list (tennis, basketball, hockey tournaments).${excluded}`
+    : `NOTE: The fixture API returned limited results today. Use your knowledge of today's scheduled matches across football, tennis, basketball, and hockey to generate picks. You know what is scheduled — use it.${excluded}`;
+
+  return `Today: ${today}
+${isWeekly ? `Week: ${weekStart} to ${weekEnd}` : ''}
+
+${fixtureSection}
+
+${slipInstructions}
+
+Apply ALL 14 rules. Score each fixture for risk before selecting. Report riskScore in output.
+Include sport field for every pick. Use your knowledge of tennis/basketball/hockey to supplement thin fixture lists.
+${isWeekly ? `Spread picks across all 7 days. Include matchDate for every pick.` : `Every pick MUST have matchDate = "${today}".`}
+
+Respond with this exact JSON schema only — no other text:
+${schema}`;
+}
+
+
+
+// ---- Claude API call helper ----
+async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeoutMs) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 60000);
+  let response;
+  // Using Google Gemini free API
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  try {
+    response = await fetch(geminiUrl, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: maxTokens || 3000,
+          responseMimeType: 'application/json'
+        }
+      })
+    });
+  } catch(err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') throw new Error('Request timed out. Tap Retry.');
+    throw new Error('Network error: ' + err.message);
+  }
+  clearTimeout(timeoutId);
+  if (!response.ok) {
+    let msg = 'Gemini API error ' + response.status;
+    try { const d = await response.json(); msg = d.error?.message || msg; } catch(e) {}
+    throw new Error(msg);
+  }
+  const data = await response.json();
+  let raw = '';
+  try { raw = data.candidates[0].content.parts[0].text; } catch(e) { throw new Error('Empty response from Gemini'); }
+  // Strip markdown code blocks
+  raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Try direct parse first
+  try { return JSON.parse(raw); } catch(e) {}
+  // Try extracting the outermost JSON object
+  const objMatch = raw.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    try { return JSON.parse(objMatch[0]); } catch(e) {}
+    // Try to recover truncated JSON
+    let partial = objMatch[0];
+    // Try appending common closings
+    for (const tail of [']}', ']\n}', '\n  ]\n}', ']}\n']) {
+      try { return JSON.parse(partial + tail); } catch(e) {}
+    }
+    // Find last complete object in the slip array
+    const lastBrace = partial.lastIndexOf('}');
+    if (lastBrace > 10) {
+      const truncated = partial.substring(0, lastBrace + 1);
+      for (const tail of [']}', ']\n}']) {
+        try { return JSON.parse(truncated + tail); } catch(e) {}
+      }
+    }
+    // Extract any valid slip items using regex
+    const slipItems = [];
+    const rx = /\{"homeTeam"[^}]+(?:\{[^}]*\}[^}]*)*\}/g;
+    let hit;
+    while ((hit = rx.exec(partial)) !== null) {
+      try { slipItems.push(JSON.parse(hit[0])); } catch(e) {}
+    }
+    if (slipItems.length > 0) return { slip: slipItems };
+  }
+  // Last resort: try to build valid JSON from what we got
+  // Find all complete objects in the slip array
+  const slipMatch = raw.match(/"slip"\s*:\s*\[([\s\S]*?)\]\s*[,}]/);
+  if (slipMatch) {
+    try {
+      // Try to close any open object
+      let items = slipMatch[1].trim();
+      if (!items.endsWith('}')) {
+        const lastClose = items.lastIndexOf('}');
+        if (lastClose > 0) items = items.substring(0, lastClose + 1);
+      }
+      const recovered = JSON.parse(`{"slip":[${items}]}`);
+      if (recovered.slip && recovered.slip.length > 0) {
+        recovered.combinedOdds = recovered.slip.reduce((a,m)=>a*(parseFloat(m.odds)||1.4),1);
+        recovered.averageConfidence = Math.round(recovered.slip.reduce((a,m)=>a+(m.confidence||75),0)/recovered.slip.length);
+        recovered.analystNote = 'Recovered partial response.';
+        recovered.riskLevel = 'MODERATE';
+        recovered.stakeRecommendation = 'Verify picks manually.';
+        return recovered;
+      }
+    } catch(e) {}
+  }
+  throw new Error('Invalid JSON from Claude: ' + raw.substring(0, 150));
+}
+
+// ---- Weekly split: 2 calls of ~15 legs each ----
+async function generateWeeklySplit(apiKey, systemPrompt, fixtures, weekStart, weekEnd) {
+  // Split week into 3 parts to avoid JSON truncation
+  // Part 1: Mon-Tue, Part 2: Wed-Thu, Part 3: Fri-Sun
+  const start = new Date(weekStart + 'T12:00:00');
+
+  function addDays(d, n) {
+    const r = new Date(d); r.setDate(r.getDate() + n);
+    return `${r.getFullYear()}-${String(r.getMonth()+1).padStart(2,'0')}-${String(r.getDate()).padStart(2,'0')}`;
+  }
+
+  const d0 = weekStart;           // Mon
+  const d2 = addDays(start, 2);   // Wed
+  const d4 = addDays(start, 4);   // Fri
+  const d6 = weekEnd;             // Sun
+
+  // Compact schema - reduces output tokens significantly
+  const schema = `{"slip":[{"homeTeam":"Team A","awayTeam":"Team B","sport":"Football","league":"Liga Name","country":"Country","matchDate":"YYYY-MM-DD","matchTime":"HH:MM","market":"Draw No Bet","selectedOutcome":"Team A","odds":1.35,"confidence":82,"riskScore":12,"factors":{"motivation":"Fighting relegation","motivationLevel":"HIGH","form":"WWDLW","oppositionStrength":"WEAK","rotationRisk":"LOW","isDerby":false,"isDeadRubber":false,"isFinal":false,"fixtureImportance":"Relegation battle","keyFact":"Key fact here","rulesApplied":["Dead Rubber Rule"]},"warning":null}]}`;
+
+  // Define fixtureHint here so it's in scope for makePrompt
+  const fixtureHint = fixtures && fixtures.length > 0
+    ? `Known fixtures: ${JSON.stringify(fixtures.slice(0,15).map(f=>({home:f.strHomeTeam||f.home,away:f.strAwayTeam||f.away,league:f.strLeague||f.league,date:f.dateEvent})))}`
+    : `Use your knowledge of this week's scheduled matches.`;
+
+  function makePrompt(dateFrom, dateTo, dayRange, part) {
+    const hint = part === 1 ? fixtureHint : 'Pick completely different matches from previous parts. No repeats.';
+    return `ShingieBot weekly slip PART ${part}/3 for Shingirai Zinhu.
+Date range: ${dateFrom} to ${dateTo} (${dayRange}).
+Select exactly 6 picks for this period (2-3 per day).
+Mix sports: Football, Tennis, Basketball, Hockey.
+Rules: skip dead rubbers, derbies, rotation risk, no-stakes teams.
+Markets: Football=DNB/Double Chance. Tennis/Basketball/Hockey=Match Winner.
+Minimum confidence 72%. Use your knowledge of real matches this week.
+Each pick must have matchDate within ${dateFrom} to ${dateTo}.
+${hint}
+Output ONLY a raw JSON object. No markdown. No explanation. Example structure:
+{"slip":[{"homeTeam":"Bayern Munich","awayTeam":"Mainz","sport":"Football","league":"Bundesliga","country":"Germany","matchDate":"${dateFrom}","matchTime":"19:30","market":"Draw No Bet","selectedOutcome":"Bayern Munich","odds":1.22,"confidence":88,"riskScore":8,"factors":{"motivation":"Title race","motivationLevel":"HIGH","form":"WWWWW","oppositionStrength":"VERY_WEAK","rotationRisk":"LOW","isDerby":false,"isDeadRubber":false,"isFinal":false,"fixtureImportance":"Title decider","keyFact":"Bayern unbeaten at home this season","rulesApplied":["Motivation Rule"]},"warning":null}]}`;
+  }
+
+  const p1 = makePrompt(d0, addDays(start,1), 'Mon-Tue', 1);
+  const p2 = makePrompt(d2, addDays(start,3), 'Wed-Thu', 2);
+  const p3 = makePrompt(d4, d6, 'Fri-Sun', 3);
+
+  showPanel('weekly', 'loading', null, 'Generating Mon–Tue picks... (1/3)');
+  let part1, part2, part3;
+  try { part1 = await callClaudeAPI(apiKey, systemPrompt, p1, 4000, 55000); } catch(e) { part1 = {slip:[]}; console.error("Part1 failed:", e); }
+
+  showPanel('weekly', 'loading', null, 'Generating Wed–Thu picks... (2/3)');
+  try { part2 = await callClaudeAPI(apiKey, systemPrompt, p2, 4000, 55000); } catch(e) { part2 = {slip:[]}; console.error("Part2 failed:", e); }
+
+  showPanel('weekly', 'loading', null, 'Generating Fri–Sun picks... (3/3)');
+  try { part3 = await callClaudeAPI(apiKey, systemPrompt, p3, 4000, 55000); } catch(e) { part3 = {slip:[]}; console.error("Part3 failed:", e); }
+
+  // Merge all legs, remove duplicates
+  const seen = new Set();
+  const allLegs = [];
+  for (const leg of [...(part1.slip||[]), ...(part2.slip||[]), ...(part3.slip||[])]) {
+    const key = `${leg.homeTeam}|${leg.awayTeam}`;
+    if (!seen.has(key) && leg.homeTeam && leg.awayTeam) {
+      seen.add(key);
+      allLegs.push(leg);
+    }
+  }
+
+  if (allLegs.length === 0) throw new Error('Weekly generation returned no picks across all 3 parts. Tap Retry.');
+
+  const combinedOdds = Math.round(allLegs.reduce((a, m) => a * (parseFloat(m.odds) || 1.4), 1) * 100) / 100;
+  const avgConf = Math.round(allLegs.reduce((a, m) => a + (m.confidence || 75), 0) / allLegs.length);
+
+  return {
+    slip: allLegs,
+    combinedOdds,
+    averageConfidence: avgConf,
+    stakeRecommendation: '$1–$2 MAXIMUM. Dream slip — life changing potential.',
+    analystNote: `Weekly mega slip: ${allLegs.length} legs across ${weekStart} to ${weekEnd}. Football, tennis, basketball and hockey combined. Stake $1-$2 only. This is dream money.`,
+    riskLevel: 'MODERATE',
+    dateVerified: `${weekStart} to ${weekEnd}`
+  };
+}
+
+
+async function generateSlip(tabId) {
+  const apiKey = state.apiKey;
+  if (!apiKey) {
+    showPanel(tabId, 'nokey');
+    return;
+  }
+  
+  const cfg = SLIP_CONFIG[tabId];
+  setSlipStatus(tabId, 'loading');
+  showPanel(tabId, 'loading');
+
+  try {
+    // Fetch fixtures — weekly gets all 7 days, daily gets today only
+    let fixtures = [];
+    if (tabId === 'weekly') {
+      showPanel(tabId, 'loading', null, 'Building your weekly mega slip across all sports...');
+      // For weekly, just use today's fixtures as context — Claude fills the rest from knowledge
+      fixtures = state.fixtures || [];
+      if (fixtures.length === 0) {
+        try { fixtures = await fetchFixtures(state.today); state.fixtures = fixtures; } catch(e) { fixtures = []; }
+      }
+      // Weekly always proceeds — Claude uses its own knowledge for the full week
+    } else {
+      showPanel(tabId, 'loading', null, 'Scanning all leagues worldwide — this takes ~15 seconds...');
+      fixtures = state.fixtures;
+      if (!fixtures || fixtures.length === 0) {
+        try {
+          fixtures = await fetchFixtures(state.today);
+          state.fixtures = fixtures;
+          document.getElementById('fixtureCount').textContent = fixtures.length + ' fixture' + (fixtures.length !== 1 ? 's' : '');
+        } catch(e) { fixtures = []; }
+      }
+      if (fixtures.length === 0) {
+        throw new Error('No fixtures found for today (' + state.today + '). Check your internet connection and tap Retry.');
+      }
+    }
+
+    const systemPrompt = buildSystemPrompt(tabId);
+    const userPrompt = buildUserPrompt(tabId, fixtures);
+
+    // Timeout: 60s for daily slips, 120s for weekly (2 separate calls)
+    const controller = new AbortController();
+    const timeoutMs = (tabId === 'weekly') ? 120000 : 60000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    // For weekly: split into 2 calls (days 1-4 and days 5-7) to avoid timeout
+    let slip;
+    // Weekly: 2 split calls to avoid timeout. Daily/Safe/Fire: single call.
+    if (tabId === 'weekly') {
+      slip = await generateWeeklySplit(apiKey, systemPrompt, fixtures, state.weekStart, state.weekEnd);
+    } else {
+      slip = await callClaudeAPI(apiKey, systemPrompt, buildUserPrompt(tabId, fixtures), 4000, 60000);
+    }
+    // === DEDUP: Remove any match already used in another slip today ===
+    if (slip.slip && Array.isArray(slip.slip) && tabId !== 'weekly') {
+      const beforeCount = slip.slip.length;
+      slip.slip = slip.slip.filter(m => {
+        const key = `${m.homeTeam} vs ${m.awayTeam}`;
+        return !state.usedMatches.includes(key);
+      });
+      if (slip.slip.length === 0 && beforeCount > 0) {
+        throw new Error('All picks were already used in other slips today. ShingieBot needs more unique fixtures. Try refreshing or come back later.');
+      }
+      // Recalculate combined odds after dedup
+      if (slip.slip.length > 0) {
+        slip.combinedOdds = Math.round(slip.slip.reduce((a, m) => a * (parseFloat(m.odds) || 1.5), 1) * 100) / 100;
+        slip.averageConfidence = Math.round(slip.slip.reduce((a, m) => a + (m.confidence || 75), 0) / slip.slip.length);
+      }
+    }
+
+    // Save slip
+    state.slips[tabId] = slip;
+    const cacheKey = cfg.daily ? getSlipKey(tabId, state.today) : getWeeklyKey();
+    saveData(cacheKey, { slip, generatedDate: state.today, weekStart: state.weekStart });
+
+    // Register used matches so other slips cannot repeat them
+    if (slip.slip && Array.isArray(slip.slip)) {
+      for (const m of slip.slip) {
+        const key = `${m.homeTeam} vs ${m.awayTeam}`;
+        if (!state.usedMatches.includes(key)) {
+          state.usedMatches.push(key);
+        }
+      }
+    }
+
+    // Save to results tracker for audit
+    saveSlipToTracker(tabId, slip);
+
+    setSlipStatus(tabId, 'ready');
+    renderSlip(tabId);
+    updateBottomBar();
+
+  } catch(err) {
+    console.error('SlipGen error:', err);
+    setSlipStatus(tabId, 'error');
+    showPanel(tabId, 'error', err.message || 'Failed to generate slip. Check your API key and try again.');
+  }
+}
+
+// ============================================================
+// LOADING / CACHING
+// ============================================================
+async function loadOrGenerateSlip(tabId) {
+  const cfg = SLIP_CONFIG[tabId];
+  
+  if (cfg.daily) {
+    const cacheKey = getSlipKey(tabId, state.today);
+    const cached = loadData(cacheKey);
+    if (cached && cached.generatedDate === state.today && cached.slip) {
+      state.slips[tabId] = cached.slip;
+      setSlipStatus(tabId, 'ready');
+      if (state.activeTab === tabId) renderSlip(tabId);
+      updateBottomBar();
+      return;
+    }
+  } else {
+    // Weekly: load if same week
+    const cached = loadData(getWeeklyKey());
+    if (cached && cached.weekStart === state.weekStart && cached.slip) {
+      state.slips[tabId] = cached.slip;
+      setSlipStatus(tabId, 'ready');
+      if (state.activeTab === tabId) renderSlip(tabId);
+      updateBottomBar();
+      return;
+    }
+  }
+  
+  // Need to generate
+  if (state.activeTab === tabId || tabId === 'safe') {
+    generateSlip(tabId);
+  } else {
+    setSlipStatus(tabId, 'idle');
+    showPanel(tabId, 'idle');
+  }
+}
+
+// ============================================================
+// UI — STATUS
+// ============================================================
+function setSlipStatus(tabId, status) {
+  state.slipStatus[tabId] = status;
+  const dot = document.getElementById(`dot-${tabId}`);
+  const bdot = document.getElementById(`bdot-${tabId}`);
+  if (dot) {
+    dot.className = 'tab-dot';
+    if (status === 'ready') dot.classList.add('ready');
+    else if (status === 'loading') dot.classList.add('loading');
+    else if (status === 'error') dot.classList.add('error');
+  }
+  if (bdot) {
+    bdot.className = `bottom-dot ${tabId}`;
+    if (status === 'ready') bdot.classList.add('ready');
+    else if (status === 'loading') bdot.classList.add('loading');
+  }
+}
+
+function showPanel(tabId, state, errorMsg, subtitle) {
+  const panel = document.getElementById(`panel-${tabId}`);
+  if (!panel) return;
+  if (state === 'loading') {
+    const sub = subtitle || 'Applying all rules. Checking motivations.';
+    panel.innerHTML = `<div class="loading-state">
+      <div class="loader-ring"></div>
+      <div class="loading-text">ShingieBot is analyzing...</div>
+      <div class="loading-sub">${sub}</div>
+    </div>`;
+  } else if (state === 'error') {
+    panel.innerHTML = `<div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">Analysis Failed</div>
+      <div class="error-msg">${errorMsg || 'Something went wrong.'}</div>
+      <button class="retry-btn" onclick="generateSlip('${tabId}')">🔄 RETRY</button>
+    </div>`;
+  } else if (state === 'nokey') {
+    panel.innerHTML = `<div class="error-state">
+      <div class="error-icon">🔑</div>
+      <div class="error-title">API Key Required</div>
+      <div class="error-msg">Set your Anthropic API key in settings to unlock ShingieBot analysis.</div>
+      <button class="retry-btn" onclick="openSettings()" style="background:var(--daily);">⚙️ SET API KEY</button>
+    </div>`;
+  } else if (state === 'idle') {
+    panel.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">⏳</div>
+      <div class="empty-title">Not Generated Yet</div>
+      <div class="empty-msg">Switch to this tab to trigger analysis.</div>
+      <button class="retry-btn" onclick="generateSlip('${tabId}')" style="margin-top:12px;background:var(--daily);">GENERATE NOW</button>
+    </div>`;
+  }
+}
+
+// ============================================================
+// UI — RENDER SLIP
+// ============================================================
+// Determine if a pick won/lost based on final score
+function determinePickResult(match, score) {
+  const hs = parseInt(score.homeScore);
+  const as = parseInt(score.awayScore);
+  if (isNaN(hs) || isNaN(as)) return null;
+  const market = (match.market || '').toLowerCase();
+  const outcome = (match.selectedOutcome || '').toLowerCase();
+  const homeWin = hs > as;
+  const awayWin = as > hs;
+  const draw = hs === as;
+
+  if (market.includes('draw no bet') || market.includes('dnb')) {
+    if (draw) return 'void';
+    if (outcome.includes(match.homeTeam.toLowerCase().substring(0,6))) return homeWin ? 'won' : 'lost';
+    return awayWin ? 'won' : 'lost';
+  }
+  if (market.includes('double chance')) {
+    if (outcome.includes('1x') || outcome.includes('home or draw')) return (homeWin || draw) ? 'won' : 'lost';
+    if (outcome.includes('x2') || outcome.includes('away or draw')) return (awayWin || draw) ? 'won' : 'lost';
+    if (outcome.includes('12') || outcome.includes('home or away')) return (!draw) ? 'won' : 'lost';
+  }
+  if (market.includes('match winner') || market.includes('1x2') || market.includes('moneyline')) {
+    if (outcome.includes('draw') || outcome === 'x') return draw ? 'won' : 'lost';
+    if (outcome.includes(match.homeTeam.toLowerCase().substring(0,5))) return homeWin ? 'won' : 'lost';
+    if (outcome.includes(match.awayTeam.toLowerCase().substring(0,5))) return awayWin ? 'won' : 'lost';
+    // Fallback: if outcome contains "win" check home/away
+    if (outcome.includes('home') || outcome.includes(' win') && !outcome.includes('away')) return homeWin ? 'won' : 'lost';
+    return awayWin ? 'won' : 'lost';
+  }
+  return null;
+}
+
+function getConfColor(conf) {
+  if (conf >= 93) return 'var(--safe)';
+  if (conf >= 82) return 'var(--daily)';
+  if (conf >= 70) return 'var(--warn)';
+  return 'var(--fire)';
+}
+function renderFormDots(formStr) {
+  if (!formStr) return '';
+  return formStr.split('').map(c => `<div class="form-dot form-${c}">${c}</div>`).join('');
+}
+function renderMatchCard(match, index, tabId) {
+  const cfg = SLIP_CONFIG[tabId];
+  const today = state.today;
+  const dateOk = cfg.daily ? match.matchDate === today : (match.matchDate >= state.weekStart && match.matchDate <= state.weekEnd);
+  const liveData = state.liveScores[match.idEvent] || null;
+  const isLive = liveData && liveData.status === 'In Progress';
+  const isFT = liveData && liveData.status === 'Match Finished';
+  const confColor = getConfColor(match.confidence);
+  const timeZim = utcToZimbabwe(match.matchTime);
+  const f = match.factors || {};
+  const isDerby = f.isDerby;
+  const isDeadRubber = f.isDeadRubber;
+  const isFinal = f.isFinal;
+
+  // Determine match status from score data + time
+  const scoreData = getMatchScore(match);
+  const timeStatus = getMatchTimeStatus(match);
+  const effectiveStatus = scoreData
+    ? (scoreData.status === 'FT' || scoreData.status === 'Match Finished' ? 'finished'
+       : scoreData.status === 'In Progress' ? 'live' : timeStatus)
+    : timeStatus;
+  const isLiveNow = effectiveStatus === 'live';
+  const isFinished = effectiveStatus === 'finished';
+
+  let scoreHTML = '';
+  if (scoreData && (isLiveNow || isFinished)) {
+    const hs = scoreData.homeScore ?? '?';
+    const as = scoreData.awayScore ?? '?';
+    const label = isFinished ? 'FT' : `LIVE ${scoreData.progress||''}`;
+    const boxClass = isFinished ? 'score-box ft' : 'score-box live';
+    scoreHTML = `<div class="${boxClass}"><div class="score-nums">${hs} – ${as}</div><div class="score-label">${label}</div></div>`;
+    // Determine if our pick won
+    if (isFinished && scoreData.homeScore !== null) {
+      match._result = determinePickResult(match, scoreData);
+    }
+  } else if (timeStatus === 'pending') {
+    scoreHTML = `<div class="score-box"><div class="score-nums" style="font-size:14px;">–</div><div class="score-label">${timeZim} CAT</div></div>`;
+  } else {
+    // Live but no score data yet
+    scoreHTML = `<div class="score-box live"><div class="score-nums" style="font-size:11px;">LIVE</div><div class="score-label">Fetching...</div></div>`;
+  }
+
+  let warnings = [];
+  if (isDerby) warnings.push('⚡ DERBY WARNING');
+  if (isDeadRubber) warnings.push('💀 DEAD RUBBER WARNING');
+  if (isFinal) warnings.push('🏆 FINAL WARNING');
+  if (f.rotationRisk === 'HIGH') warnings.push('🔄 ROTATION RISK');
+  const warningBadges = warnings.map(w => `<span class="warn-badge">${w}</span>`).join('');
+  const cardClass = isLive ? 'match-card live' : isFT ? 'match-card' : 'match-card';
+
+  return `<div class="${cardClass}" id="card-${tabId}-${index}">
+  <div class="card-top">
+    <div class="card-meta">
+      <span class="match-num">#${index+1}</span>
+      <span class="league-tag">${match.sport && match.sport !== 'Football' && match.sport !== 'Soccer' ? '🎾🏀🏒'[['Tennis','Basketball','Hockey'].indexOf(match.sport)] + ' ' : '⚽ '}${match.league || match.country || ''}</span>
+      <span class="date-badge ${dateOk?'ok':'bad'}">${match.matchDate || '?'}</span>
+      ${isLive ? '<span class="live-badge">⚡ LIVE</span>' : ''}
+      ${isFT ? '<span class="date-badge ok">FT</span>' : ''}
+    </div>
+    <div class="card-badges">${warningBadges}</div>
+  </div>
+  <div class="card-body">
+    <div class="kickoff-time">⏰ ${timeZim} Zimbabwe Time${tabId==='weekly' ? ` · ${match.matchDate}` : ''}</div>
+    <div class="teams-row">
+      <div class="team-name home">${match.homeTeam}</div>
+      ${scoreHTML}
+      <div class="team-name away">${match.awayTeam}</div>
+    </div>
+    <div class="pick-row" style="${match._result==='won'?'border-color:rgba(0,230,118,0.5);background:rgba(0,230,118,0.06)':match._result==='lost'?'border-color:rgba(255,82,82,0.5);background:rgba(255,82,82,0.06)':match._result==='void'?'border-color:rgba(255,179,0,0.5);background:rgba(255,179,0,0.06)':''}">
+      <div>
+        <div class="pick-market">${match.market}</div>
+        <div class="pick-outcome">${match.selectedOutcome}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${match._result==='won'?'<span style="font-size:16px;">✅</span>':match._result==='lost'?'<span style="font-size:16px;">❌</span>':match._result==='void'?'<span style="font-size:16px;">↩️</span>':''}
+        <div class="pick-odds">@${typeof match.odds === 'number' ? match.odds.toFixed(2) : match.odds}</div>
+      </div>
+    </div>
+    <div class="confidence-row">
+      <div class="conf-labels">
+        <span class="conf-label">Confidence</span>
+        <span class="conf-pct" style="color:${confColor}">${match.confidence}%</span>
+        ${match.riskScore !== undefined ? `<span style="font-size:9px;font-family:'JetBrains Mono',monospace;padding:1px 5px;border-radius:4px;background:rgba(255,179,0,0.1);color:${match.riskScore<=20?'var(--safe)':match.riskScore<=35?'var(--daily)':'var(--warn)'}">RISK:${match.riskScore}</span>` : ''}
+      </div>
+      <div class="conf-bar-bg">
+        <div class="conf-bar-fill" style="width:${match.confidence}%;background:${confColor}"></div>
+      </div>
+    </div>
+    <div class="key-fact"><span class="key-fact-icon">🔍</span>${f.keyFact || 'No additional insight.'}</div>
+    ${match.warning ? `<div class="card-warning"><span class="card-warning-icon">⚠️</span>${match.warning}</div>` : ''}
+  </div>
+  <button class="expand-btn" onclick="toggleAnalysis('${tabId}',${index})">
+    Full Analysis <span class="expand-arrow" id="arrow-${tabId}-${index}">▼</span>
+  </button>
+  <div class="analysis-panel" id="analysis-${tabId}-${index}">
+    <div class="analysis-grid">
+      <div class="analysis-item">
+        <div class="analysis-item-label">Motivation</div>
+        <div class="analysis-item-val motivation-${f.motivationLevel||'MEDIUM'}">${f.motivationLevel||'–'}</div>
+      </div>
+      <div class="analysis-item">
+        <div class="analysis-item-label">Opposition</div>
+        <div class="analysis-item-val opposition-${f.oppositionStrength||'EVEN'}">${f.oppositionStrength||'–'}</div>
+      </div>
+      <div class="analysis-item">
+        <div class="analysis-item-label">Rotation Risk</div>
+        <div class="analysis-item-val rotation-${f.rotationRisk||'LOW'}">${f.rotationRisk||'–'}</div>
+      </div>
+      <div class="analysis-item">
+        <div class="analysis-item-label">Dead Rubber</div>
+        <div class="analysis-item-val" style="color:${f.isDeadRubber?'var(--fire)':'var(--safe)'}">${f.isDeadRubber?'YES ⚠️':'NO ✓'}</div>
+      </div>
+    </div>
+    <div class="analysis-item-label">Recent Form</div>
+    <div class="form-row">${renderFormDots(f.form)}</div>
+    ${f.motivation ? `<div class="motivation-desc">📊 ${f.motivation}</div>` : ''}
+    ${f.fixtureImportance ? `<div class="fixture-imp">🎯 ${f.fixtureImportance}</div>` : ''}
+    ${f.rulesApplied && f.rulesApplied.length > 0 ? `<div style="margin-top:6px;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rules Applied</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${f.rulesApplied.map(r=>`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(68,138,255,0.1);color:var(--daily);border:1px solid rgba(68,138,255,0.2);">${r}</span>`).join('')}</div></div>` : ''}
+  </div>
+</div>`;
+}
+
+function toggleAnalysis(tabId, index) {
+  const panel = document.getElementById(`analysis-${tabId}-${index}`);
+  const arrow = document.getElementById(`arrow-${tabId}-${index}`);
+  if (!panel) return;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  if (arrow) arrow.classList.toggle('open', !isOpen);
+}
+
+function renderSlip(tabId) {
+  const panel = document.getElementById(`panel-${tabId}`);
+  if (!panel) return;
+  const slip = state.slips[tabId];
+  if (!slip) { showPanel(tabId, 'idle'); return; }
+  const cfg = SLIP_CONFIG[tabId];
+  const slipData = slip.slip || [];
+  
+  // Slip progress for live tracking
+  let progressHTML = '';
+  if (slipData.length > 0) {
+    const legs = slipData.map((m,i) => {
+      const liveData = state.liveScores[m.idEvent];
+      let cls = 'pending', icon = `${i+1}`;
+      if (liveData) {
+        if (liveData.status === 'In Progress') { cls='live'; icon='⚡'; }
+        else if (liveData.status === 'Match Finished') { cls='won'; icon='✓'; }
+      }
+      return `<div class="leg-dot ${cls}">${icon}</div>`;
+    }).join('');
+    progressHTML = `<div class="slip-progress">
+      <div class="progress-title">Slip Progress — ${slipData.length} Legs</div>
+      <div class="progress-legs">${legs}</div>
+    </div>`;
+  }
+
+  const riskClass = `risk-${slip.riskLevel || cfg.riskProfile}`;
+  const odds = typeof slip.combinedOdds === 'number' ? slip.combinedOdds.toFixed(2) : slip.combinedOdds;
+  const conf = slip.averageConfidence || '--';
+  const colorCls = `${cfg.color}-color`;
+  const scopeDate = cfg.daily ? state.today : `${state.weekStart} → ${state.weekEnd}`;
+
+  let html = `
+  <div class="scope-banner ${cfg.color}">
+    <div>
+      <div class="scope-label ${cfg.color}">${cfg.label}</div>
+      <div class="scope-desc">${cfg.scopeDesc}</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:right;font-family:'JetBrains Mono',monospace;">${scopeDate}</div>
+  </div>
+  ${progressHTML}
+  <div class="slip-summary">
+    <div class="summary-header">
+      <div class="summary-title" style="color:var(${cfg.accentVar})">${cfg.label}</div>
+      <span class="risk-badge ${riskClass}">${slip.riskLevel || cfg.riskProfile}</span>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <div class="stat-val ${colorCls}">${odds}x</div>
+        <div class="stat-lbl">Combined Odds</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-val ${colorCls}">${conf}%</div>
+        <div class="stat-lbl">Avg Confidence</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-val ${colorCls}">${slipData.length}</div>
+        <div class="stat-lbl">Legs</div>
+      </div>
+    </div>
+    <div class="summary-stake">
+      <div class="stake-label">💰 RECOMMENDED STAKE</div>
+      ${slip.stakeRecommendation || cfg.stake}
+    </div>
+    <div class="date-verified">✓ Date Verified: ${slip.dateVerified || state.today}</div>
+    <div class="analyst-note">🤖 ${slip.analystNote || 'Analysis complete.'}</div>
+  </div>
+  <div class="matches-container">
+    <div class="section-label">Selected Matches (${slipData.length})</div>
+    ${slipData.map((m, i) => renderMatchCard(m, i, tabId)).join('')}
+  </div>
+  <div style="padding:0 12px 8px;">
+    <button onclick="generateSlip('${tabId}')" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px;font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:1px;cursor:pointer;">🔄 REGENERATE SLIP</button>
+  </div>`;
+  
+  panel.innerHTML = html;
+}
+
+function updateLiveMatchCards() {
+  // Re-render active tab if slip exists (lightweight — just update scores)
+  const tabId = state.activeTab;
+  if (state.slips[tabId]) renderSlip(tabId);
+}
+
+// ============================================================
+// UI — TABS & DATE
+// ============================================================
+function switchTab(tabId) {
+  state.activeTab = tabId;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.id === tabId));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tabId}`));
+  
+  // Special tabs — just render
+  if (tabId === 'live') {
+    renderLiveDashboard();
+    document.getElementById('main').scrollTop = 0;
+    return;
+  }
+  if (tabId === 'tracker') {
+    renderTracker();
+    document.getElementById('main').scrollTop = 0;
+    return;
+  }
+
+  // Generate if not yet loaded
+  if (state.slipStatus[tabId] === 'idle') {
+    generateSlip(tabId);
+  } else if (state.slips[tabId]) {
+    renderSlip(tabId);
+  }
+  document.getElementById('main').scrollTop = 0;
+}
+
+function updateDateDisplay() {
+  const today = state.today;
+  const weekStart = state.weekStart;
+  const weekEnd = state.weekEnd;
+  const nice = formatDateDisplay(today);
+  document.getElementById('headerDate').textContent = nice;
+  document.getElementById('headerWeek').textContent = `Week: ${weekStart} → ${weekEnd}`;
+  document.getElementById('bottomDate').textContent = `📅 ${today}`;
+}
+
+function updateFixtureCount() {
+  const count = state.fixtures.length;
+  document.getElementById('fixtureCount').textContent = `${count} fixture${count!==1?'s':''}`;
+}
+
+function updateBottomBar() {
+  let readyCount = Object.values(state.slipStatus).filter(s => s === 'ready').length;
+  document.getElementById('readyCount').textContent = `${readyCount} READY`;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function openSettings() {
+  const apiKey = loadData('shingiebot_apikey');
+  document.getElementById('apiKeyInput').value = apiKey || '';
+  updateKeyStatus(!!apiKey);
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+function closeSettingsIfOutside(e) {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+}
+function updateKeyStatus(hasKey) {
+  const el = document.getElementById('keyStatus');
+  if (el) {
+    el.textContent = hasKey ? '✓ API Key is configured' : '✗ Not configured — ShingieBot needs this to analyze matches';
+    el.className = 'key-status ' + (hasKey ? 'set' : 'notset');
+  }
+}
+function saveSettings() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { alert('Please enter your API key.'); return; }
+  saveData('shingiebot_apikey', key);
+  state.apiKey = key;
+  updateKeyStatus(true);
+  closeSettings();
+  // Regenerate active tab with new key
+  generateSlip(state.activeTab);
+}
+
+// ============================================================
+// REFRESH
+// ============================================================
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  
+  // Clear fixture cache and used matches
+  localStorage.removeItem(getFixturesKey(state.today));
+  state.fixtures = [];
+  state.usedMatches = []; // reset exclusion list on full refresh
+  state.slips = { safe: null, daily: null, fire: null, weekly: null };
+  
+  try {
+    const fixtures = await fetchFixtures(state.today);
+    state.fixtures = fixtures;
+    updateFixtureCount();
+  } catch(e) {}
+  
+  btn.classList.remove('spinning');
+  
+  // Regenerate active tab
+  generateSlip(state.activeTab);
+  
+  // Start live polling
+  fetchLiveScores();
+}
+
+// ============================================================
+// RESULTS TRACKER
+// ============================================================
+
+function getTrackerKey() { return 'shingiebot_tracker_v1'; }
+
+function loadTracker() {
+  return loadData(getTrackerKey()) || { entries: [] };
+}
+
+function saveTracker(tracker) {
+  saveData(getTrackerKey(), tracker);
+}
+
+function saveSlipToTracker(tabId, slip) {
+  if (!slip || !slip.slip || slip.slip.length === 0) return;
+  const tracker = loadTracker();
+  const entry = {
+    id: Date.now(),
+    tabId,
+    slipType: SLIP_CONFIG[tabId].label,
+    date: state.today,
+    generatedAt: new Date().toISOString(),
+    combinedOdds: slip.combinedOdds,
+    legs: slip.slip.map(m => ({
+      match: `${m.homeTeam} vs ${m.awayTeam}`,
+      league: m.league,
+      market: m.market,
+      pick: m.selectedOutcome,
+      odds: m.odds,
+      confidence: m.confidence,
+      matchDate: m.matchDate,
+      status: 'pending', // pending | won | lost
+      score: ''
+    })),
+    overallStatus: 'pending', // pending | won | lost
+    stake: SLIP_CONFIG[tabId].stake,
+    analystNote: slip.analystNote
+  };
+
+  // Remove old entries older than 7 days
+  const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  tracker.entries = tracker.entries.filter(e => e.id > cutoff);
+
+  // Don't duplicate same slip same day
+  tracker.entries = tracker.entries.filter(e => !(e.tabId === tabId && e.date === state.today));
+
+  tracker.entries.unshift(entry); // newest first
+  saveTracker(tracker);
+}
+
+function updateLegStatus(entryId, legIdx, status, score) {
+  const tracker = loadTracker();
+  const entry = tracker.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  entry.legs[legIdx].status = status;
+  if (score) entry.legs[legIdx].score = score;
+
+  // Auto-update overall status
+  const allDone = entry.legs.every(l => l.status !== 'pending');
+  if (allDone) {
+    entry.overallStatus = entry.legs.every(l => l.status === 'won') ? 'won' : 'lost';
+  } else {
+    entry.overallStatus = 'pending';
+  }
+  saveTracker(tracker);
+  renderTracker();
+}
+
+function markSlipResult(entryId, result) {
+  const tracker = loadTracker();
+  const entry = tracker.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  entry.overallStatus = result;
+  entry.legs.forEach(l => { if (l.status === 'pending') l.status = result; });
+  saveTracker(tracker);
+  renderTracker();
+}
+
+function clearTracker() {
+  if (!confirm('Clear all results history? This cannot be undone.')) return;
+  saveTracker({ entries: [] });
+  renderTracker();
+}
+
+function renderLiveDashboard() {
+  const panel = document.getElementById('panel-live');
+  if (!panel || !panel.classList.contains('active')) return;
+
+  const allSlips = ['safe','daily','fire'].map(t => ({
+    tabId: t,
+    label: SLIP_CONFIG[t].label,
+    color: SLIP_CONFIG[t].color,
+    slip: state.slips[t]
+  })).filter(s => s.slip && s.slip.slip && s.slip.slip.length > 0);
+
+  if (allSlips.length === 0) {
+    panel.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">No Active Slips</div>
+      <div class="empty-msg">Generate your slips first. Live results will appear here automatically as matches kick off and finish.</div>
+    </div>`;
+    return;
+  }
+
+  // Count overall stats
+  let totalWon=0, totalLost=0, totalLive=0, totalPending=0, totalVoid=0;
+  for (const {slip} of allSlips) {
+    for (const m of slip.slip) {
+      const s = m._timeStatus || getMatchTimeStatus(m);
+      const r = m._result;
+      if (r === 'won') totalWon++;
+      else if (r === 'lost') totalLost++;
+      else if (r === 'void') totalVoid++;
+      else if (s === 'live') totalLive++;
+      else totalPending++;
+    }
+  }
+
+  let html = `
+  <div style="padding:12px 12px 6px;">
+    <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:1px;">📡 Live Match Tracker</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px;">Auto-updates every 3 minutes · Zimbabwe time (UTC+2)</div>
+  </div>
+  <div class="tracker-stats" style="margin-bottom:6px;">
+    <div class="tracker-stat"><div class="tracker-stat-val green">${totalWon}</div><div class="tracker-stat-lbl">Won ✅</div></div>
+    <div class="tracker-stat"><div class="tracker-stat-val red">${totalLost}</div><div class="tracker-stat-lbl">Lost ❌</div></div>
+    <div class="tracker-stat"><div class="tracker-stat-val" style="color:var(--fire);${totalLive>0?'animation:pulse 1s ease-in-out infinite':''}">${totalLive}</div><div class="tracker-stat-lbl">Live ⚡</div></div>
+    <div class="tracker-stat"><div class="tracker-stat-val yellow">${totalPending}</div><div class="tracker-stat-lbl">Pending ⏳</div></div>
+  </div>`;
+
+  for (const {tabId, label, color, slip} of allSlips) {
+    const legs = slip.slip;
+    const legWon = legs.filter(m=>m._result==='won').length;
+    const legLost = legs.filter(m=>m._result==='lost').length;
+    const legLive = legs.filter(m=>!m._result && (m._timeStatus||getMatchTimeStatus(m))==='live').length;
+    const legPending = legs.length - legWon - legLost - legLive;
+
+    html += `<div class="slip-group-label">
+      <span class="slip-type-${tabId}">${label}</span>
+      <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;">
+        ✅${legWon} ❌${legLost} ⚡${legLive} ⏳${legPending}
+      </span>
+    </div>
+    <div class="slip-summary-bar">
+      <span style="color:var(--muted);">Combined Odds</span>
+      <span style="font-family:'Bebas Neue',cursive;font-size:18px;color:var(--warn);">${typeof slip.combinedOdds==='number'?slip.combinedOdds.toFixed(2):slip.combinedOdds}x</span>
+    </div>`;
+
+    for (const m of legs) {
+      const score = getMatchScore(m);
+      const timeStatus = m._timeStatus || getMatchTimeStatus(m);
+      const result = m._result;
+      const cardClass = result || (timeStatus === 'live' ? 'live' : '');
+
+      let scoreDisplay, statusPill, scoreClass;
+      if (score && timeStatus === 'finished') {
+        scoreDisplay = `${score.homeScore} – ${score.awayScore}`;
+        scoreClass = 'ft-score';
+        statusPill = result === 'won' ? 'won' : result === 'lost' ? 'lost' : result === 'void' ? 'void' : 'ft';
+      } else if (score && timeStatus === 'live') {
+        scoreDisplay = `${score.homeScore||0} – ${score.awayScore||0}`;
+        scoreClass = 'live-score';
+        statusPill = 'live';
+      } else if (timeStatus === 'live') {
+        scoreDisplay = 'LIVE';
+        scoreClass = 'live-score';
+        statusPill = 'live';
+      } else {
+        const timeZim = utcToZimbabwe(m.matchTime);
+        scoreDisplay = timeZim + ' CAT';
+        scoreClass = 'pending-score';
+        statusPill = 'pending';
+      }
+
+      const pillLabel = statusPill === 'won' ? '✅ WON' : statusPill === 'lost' ? '❌ LOST' : statusPill === 'void' ? '↩️ VOID' : statusPill === 'live' ? '⚡ LIVE' : statusPill === 'ft' ? 'FT' : '⏳ PENDING';
+
+      html += `<div class="live-dash-card ${cardClass}">
+        <div class="live-dash-header">
+          <div>
+            <div class="live-dash-teams">${m.homeTeam} vs ${m.awayTeam}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">${m.league||''} · ${m.sport||'Football'} · ${m.matchDate||''}</div>
+          </div>
+          <div class="live-dash-score ${scoreClass}">${scoreDisplay}</div>
+        </div>
+        <div class="live-dash-footer">
+          <div style="color:var(--muted);">${m.market}: <span style="color:var(--text);font-weight:600;">${m.selectedOutcome}</span> <span style="color:var(--warn);">@${typeof m.odds==='number'?m.odds.toFixed(2):m.odds}</span></div>
+          <span class="live-status-pill ${statusPill}">${pillLabel}</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  html += `<div class="live-refresh-note">🔄 Scores refresh every 3 min when app is open</div>`;
+  panel.innerHTML = html;
+}
+
+function renderTracker() {
+  const panel = document.getElementById('panel-tracker');
+  if (!panel || !panel.classList.contains('active')) return;
+
+  const tracker = loadTracker();
+  const entries = tracker.entries || [];
+
+  // Calculate stats
+  const done = entries.filter(e => e.overallStatus !== 'pending');
+  const won = done.filter(e => e.overallStatus === 'won').length;
+  const lost = done.filter(e => e.overallStatus === 'lost').length;
+  const pending = entries.filter(e => e.overallStatus === 'pending').length;
+  const winRate = done.length > 0 ? Math.round((won / done.length) * 100) : 0;
+
+  // Stats by slip type
+  const safeWon = entries.filter(e => e.tabId==='safe' && e.overallStatus==='won').length;
+  const safeLost = entries.filter(e => e.tabId==='safe' && e.overallStatus==='lost').length;
+
+  let html = `
+  <div class="tracker-header">
+    <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:1px;padding:0 0 4px;">📊 Results Audit — Last 7 Days</div>
+    <div style="font-size:11px;color:var(--muted);">Track your slip performance. Update results as matches finish.</div>
+  </div>
+  <div class="tracker-stats">
+    <div class="tracker-stat">
+      <div class="tracker-stat-val green">${won}</div>
+      <div class="tracker-stat-lbl">Won</div>
+    </div>
+    <div class="tracker-stat">
+      <div class="tracker-stat-val red">${lost}</div>
+      <div class="tracker-stat-lbl">Lost</div>
+    </div>
+    <div class="tracker-stat">
+      <div class="tracker-stat-val yellow">${pending}</div>
+      <div class="tracker-stat-lbl">Pending</div>
+    </div>
+    <div class="tracker-stat">
+      <div class="tracker-stat-val blue">${winRate}%</div>
+      <div class="tracker-stat-lbl">Win Rate</div>
+    </div>
+  </div>
+  <div class="win-rate-bar"><div class="win-rate-fill" style="width:${winRate}%"></div></div>
+  <div style="padding:4px 12px 8px;font-size:11px;color:var(--muted);">
+    Safe: ${safeWon}W/${safeLost}L &nbsp;|&nbsp; ${entries.length} total slips tracked
+  </div>
+  <div style="padding:2px 12px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">
+    Tap a leg result to update it. Mark WON or LOST after each game finishes.
+  </div>`;
+
+  if (entries.length === 0) {
+    html += `<div class="tracker-empty">
+      <div class="tracker-empty-icon">📋</div>
+      <div class="tracker-empty-title">No Results Yet</div>
+      <div class="tracker-empty-msg">Generate slips and they will appear here automatically. Update results as matches finish to track your performance over time.</div>
+    </div>`;
+  } else {
+    html += `<div style="padding:0 0 4px;">`;
+    for (const entry of entries) {
+      const statusClass = entry.overallStatus;
+      const statusLabel = entry.overallStatus === 'won' ? '✓ WON' : entry.overallStatus === 'lost' ? '✗ LOST' : '⏳ PENDING';
+      const slipColorClass = `slip-type-${entry.tabId}`;
+      html += `<div class="result-entry">
+        <div class="result-entry-header">
+          <div>
+            <div class="result-slip-type ${slipColorClass}">${entry.slipType}</div>
+            <div class="result-date">${entry.date} &nbsp;|&nbsp; Odds: ${typeof entry.combinedOdds === 'number' ? entry.combinedOdds.toFixed(2) : entry.combinedOdds}x</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="result-outcome ${statusClass}">${statusLabel}</span>
+            ${entry.overallStatus === 'pending' ? `
+            <div style="display:flex;gap:4px;">
+              <button class="add-result-btn" style="color:var(--safe);" onclick="markSlipResult(${entry.id},'won')">✓ WON</button>
+              <button class="add-result-btn" style="color:var(--fire);" onclick="markSlipResult(${entry.id},'lost')">✗ LOST</button>
+            </div>` : ''}
+          </div>
+        </div>
+        <div class="result-legs">
+          ${entry.legs.map((leg, li) => `
+          <div class="result-leg">
+            <div class="result-leg-match">${leg.match}</div>
+            <div class="result-leg-pick">${leg.market}: ${leg.pick}</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="result-leg-odds">@${typeof leg.odds === 'number' ? leg.odds.toFixed(2) : leg.odds}</span>
+              <select class="leg-status-select" onchange="updateLegStatus(${entry.id},${li},this.value,'')">
+                <option value="pending" ${leg.status==='pending'?'selected':''}>⏳</option>
+                <option value="won" ${leg.status==='won'?'selected':''}>✓ Won</option>
+                <option value="lost" ${leg.status==='lost'?'selected':''}>✗ Lost</option>
+              </select>
+            </div>
+          </div>`).join('')}
+        </div>
+        <div class="result-footer">
+          <div style="color:var(--muted);font-size:11px;">Stake: ${entry.stake}</div>
+          <div class="result-odds">${typeof entry.combinedOdds === 'number' ? entry.combinedOdds.toFixed(2) : entry.combinedOdds}x</div>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+    html += `<button class="clear-tracker-btn" onclick="clearTracker()">🗑 Clear All Results History</button>`;
+  }
+
+  panel.innerHTML = html;
+}
+
+// ============================================================
+// LIVE RESULTS ENGINE
+// ============================================================
+
+// Cache for match results fetched from TheSportsDB
+let liveResultsCache = {};
+let liveResultsTimer = null;
+
+// Convert match name to search query
+function buildSearchQuery(homeTeam, awayTeam) {
+  // Clean team names for search
+  const clean = s => s.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+  return `${clean(homeTeam)} ${clean(awayTeam)}`;
+}
+
+// Fetch live/recent result for a specific match from TheSportsDB
+async function fetchMatchResult(homeTeam, awayTeam, matchDate, sport) {
+  const cacheKey = `result_${homeTeam}_${awayTeam}_${matchDate}`;
+  
+  // Use cache if available and recent (5 min for live, 1hr for finished)
+  if (liveResultsCache[cacheKey]) {
+    const cached = liveResultsCache[cacheKey];
+    const age = Date.now() - cached.fetchedAt;
+    const maxAge = (cached.status === 'finished') ? 3600000 : 300000;
+    if (age < maxAge) return cached;
+  }
+
+  try {
+    // Search TheSportsDB for this event
+    const query = encodeURIComponent(`${homeTeam} ${awayTeam}`);
+    const sportParam = sport === 'Tennis' ? 'Tennis' : sport === 'Basketball' ? 'Basketball' : sport === 'Hockey' ? 'Ice_Hockey' : 'Soccer';
+    
+    // Try livescores first for today's matches
+    const today = getLocalDateStr();
+    if (matchDate === today) {
+      const liveUrl = `https://www.thesportsdb.com/api/v1/json/3/livescore.php?s=${sportParam}`;
+      const liveData = await safeFetch(liveUrl);
+      if (liveData?.events) {
+        for (const e of liveData.events) {
+          const homeMatch = (e.strHomeTeam||'').toLowerCase().includes(homeTeam.split(' ')[0].toLowerCase());
+          const awayMatch = (e.strAwayTeam||'').toLowerCase().includes(awayTeam.split(' ')[0].toLowerCase());
+          if (homeMatch && awayMatch) {
+            const result = {
+              status: e.strStatus === 'Match Finished' || e.strProgress === 'FT' ? 'finished' : 'live',
+              homeScore: parseInt(e.intHomeScore) || 0,
+              awayScore: parseInt(e.intAwayScore) || 0,
+              minute: e.strProgress || e.intEventTime || '',
+              fetchedAt: Date.now()
+            };
+            liveResultsCache[cacheKey] = result;
+            return result;
+          }
+        }
+      }
+    }
+
+    // Try event search for past matches
+    const searchUrl = `https://www.thesportsdb.com/api/v1/json/3/searchevents.php?e=${query}`;
+    const searchData = await safeFetch(searchUrl);
+    if (searchData?.event) {
+      // Find the closest match by date
+      const events = searchData.event.filter(e => e.dateEvent === matchDate || e.dateEvent?.startsWith(matchDate));
+      if (events.length > 0) {
+        const e = events[0];
+        if (e.intHomeScore !== null && e.intHomeScore !== undefined && e.intHomeScore !== '') {
+          const result = {
+            status: 'finished',
+            homeScore: parseInt(e.intHomeScore) || 0,
+            awayScore: parseInt(e.intAwayScore) || 0,
+            minute: 'FT',
+            fetchedAt: Date.now()
+          };
+          liveResultsCache[cacheKey] = result;
+          return result;
+        }
+      }
+    }
+  } catch(e) { console.warn('Result fetch error:', e); }
+  
+  return null;
+}
+
+// Determine if our pick WON or LOST based on result and market
+function evaluatePickResult(match, resultData) {
+  if (!resultData || resultData.status === 'pending') return null;
+  
+  const home = resultData.homeScore;
+  const away = resultData.awayScore;
+  const market = (match.market || '').toLowerCase();
+  const outcome = (match.selectedOutcome || '').toLowerCase();
+  const sport = match.sport || 'Football';
+  
+  // Football markets
+  if (sport === 'Football' || sport === 'Soccer') {
+    if (market.includes('draw no bet') || market.includes('dnb')) {
+      if (home === away) return 'push'; // stake returned
+      const pickedHome = outcome.includes(match.homeTeam?.split(' ')[0]?.toLowerCase() || 'home');
+      if (pickedHome) return home > away ? 'won' : 'lost';
+      return away > home ? 'won' : 'lost';
+    }
+    if (market.includes('double chance')) {
+      if (outcome.includes('1x') || outcome.includes('home or draw')) return home >= away ? 'won' : 'lost';
+      if (outcome.includes('x2') || outcome.includes('draw or away')) return away >= home ? 'won' : 'lost';
+      if (outcome.includes('12') || outcome.includes('home or away')) return home !== away ? 'won' : 'lost';
+    }
+    if (market.includes('match winner') || market.includes('1x2') || market.includes('win')) {
+      const pickedHome = outcome.includes(match.homeTeam?.split(' ')[0]?.toLowerCase() || 'home');
+      const pickedDraw = outcome.includes('draw') || outcome === 'x';
+      if (pickedDraw) return home === away ? 'won' : 'lost';
+      if (pickedHome) return home > away ? 'won' : 'lost';
+      return away > home ? 'won' : 'lost';
+    }
+    if (market.includes('over') && market.includes('goals')) {
+      const total = home + away;
+      const lineMatch = market.match(/([0-9.]+)/);
+      const line = lineMatch ? parseFloat(lineMatch[1]) : 2.5;
+      return total > line ? 'won' : 'lost';
+    }
+    if (market.includes('btts') || market.includes('both teams')) {
+      return (home > 0 && away > 0) ? 'won' : 'lost';
+    }
+  }
+  
+  // Tennis / Basketball / Hockey — Match Winner
+  if (market.includes('match winner') || market.includes('moneyline')) {
+    const pickedHome = outcome.toLowerCase().includes(match.homeTeam?.split(' ')[0]?.toLowerCase() || 'home');
+    if (pickedHome) return home > away ? 'won' : 'lost';
+    return away > home ? 'won' : 'lost';
+  }
+  
+  return null; // Cannot determine
+}
+
+// Fetch results for all picks in all active slips
+async function refreshAllResults() {
+  const today = getLocalDateStr();
+  let anyUpdated = false;
+
+  for (const tabId of ['safe', 'daily', 'fire', 'weekly']) {
+    const slip = state.slips[tabId];
+    if (!slip?.slip) continue;
+
+    for (const match of slip.slip) {
+      // Only check matches that are today or in the past
+      if (match.matchDate > today) continue;
+      
+      const result = await fetchMatchResult(
+        match.homeTeam, match.awayTeam, match.matchDate, match.sport
+      );
+      if (result) {
+        const prevStatus = match._liveResult?.status;
+        match._liveResult = result;
+        match._pickResult = evaluatePickResult(match, result);
+        if (prevStatus !== result.status) anyUpdated = true;
+      }
+      // Small delay between fetches
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+
+  if (anyUpdated && state.slips[state.activeTab]) {
+    renderSlip(state.activeTab);
+  }
+  
+  // Also refresh tracker if open
+  if (state.activeTab === 'tracker') renderTracker();
+}
+
+// Start polling live results every 3 minutes when app is in foreground
+function startResultsPolling() {
+  if (liveResultsTimer) clearInterval(liveResultsTimer);
+  liveResultsTimer = setInterval(() => {
+    if (!document.hidden) refreshAllResults();
+  }, 180000); // 3 minutes
+}
+
+// Build the status bar HTML for a match card
+function buildMatchStatusBar(match) {
+  const result = match._liveResult;
+  const pickResult = match._pickResult;
+  const today = getLocalDateStr();
+  
+  // Parse kickoff time in Zimbabwe (UTC+2)
+  let kickoffPassed = false;
+  if (match.matchDate && match.matchTime) {
+    try {
+      const kickoffUTC = new Date(`${match.matchDate}T${match.matchTime}:00Z`);
+      kickoffPassed = Date.now() > kickoffUTC.getTime() - (2 * 60 * 60 * 1000); // UTC+2
+    } catch(e) {}
+  }
+
+  if (!result) {
+    // No result fetched yet
+    if (match.matchDate < today) {
+      return `<div class="match-status-bar">
+        <span class="status-pill finished-unknown">⏱ RESULT PENDING</span>
+        <span style="font-size:10px;color:var(--muted);">Tap refresh to check</span>
+      </div>`;
+    }
+    if (match.matchDate === today && kickoffPassed) {
+      return `<div class="match-status-bar">
+        <span class="status-pill pending">⏳ CHECKING...</span>
+        <span style="font-size:10px;color:var(--muted);">Fetching live data</span>
+      </div>`;
+    }
+    // Future match
+    return `<div class="match-status-bar">
+      <span class="status-pill pending">🕐 NOT STARTED</span>
+      <span style="font-size:10px;color:var(--muted);">${match.matchDate === today ? 'Today' : match.matchDate}</span>
+    </div>`;
+  }
+
+  const scoreStr = `${result.homeScore} – ${result.awayScore}`;
+  
+  if (result.status === 'live') {
+    return `<div class="match-status-bar">
+      <span class="status-pill live">⚡ LIVE ${result.minute ? result.minute + "'" : ''}</span>
+      <span class="live-score-display live-color">${scoreStr}</span>
+    </div>`;
+  }
+  
+  if (result.status === 'finished') {
+    const resultClass = pickResult === 'won' ? 'won-color' : pickResult === 'lost' ? 'lost-color' : '';
+    const pickLabel = pickResult === 'won' 
+      ? '<span class="result-outcome-label won">✓ WON</span>'
+      : pickResult === 'lost' 
+        ? '<span class="result-outcome-label lost">✗ LOST</span>'
+        : pickResult === 'push'
+          ? '<span class="result-outcome-label draw">↩ PUSH</span>'
+          : '';
+    return `<div class="match-status-bar">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="status-pill ${pickResult === 'won' ? 'finished-won' : pickResult === 'lost' ? 'finished-lost' : 'finished-unknown'}">FT</span>
+        ${pickLabel}
+      </div>
+      <span class="live-score-display ${resultClass}">${scoreStr}</span>
+    </div>`;
+  }
+
+  return '';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  // Clear any stale fixture caches from previous versions
+  try {
+    const keys = Object.keys(localStorage);
+    for (const k of keys) {
+      if (k.startsWith('shingiebot_fixtures_') || k.startsWith('shingiebot_weekfixtures_')) {
+        const val = loadData(k);
+        if (val && val.fixtures && val.fixtures.length <= 3) {
+          localStorage.removeItem(k); // remove tiny/stale caches
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Date setup
+  state.today = getLocalDateStr();
+  state.usedMatches = []; // fresh start each day
+  const week = getLocalWeekBounds();
+  state.weekStart = week.start;
+  state.weekEnd = week.end;
+  updateDateDisplay();
+  
+  // Load API key
+  state.apiKey = loadData('shingiebot_apikey') || ''; // Gemini API key
+  
+  // Load fixtures
+  try {
+    const fixtures = await fetchFixtures(state.today);
+    state.fixtures = fixtures;
+    updateFixtureCount();
+  } catch(e) { state.fixtures = []; }
+  
+  // Load or generate all slips
+  for (const tabId of ['safe', 'daily', 'fire', 'weekly']) {
+    setSlipStatus(tabId, 'idle');
+    if (!state.apiKey) {
+      showPanel(tabId, 'nokey');
+    } else {
+      loadOrGenerateSlip(tabId);
+    }
+  }
+  
+  // Show idle panels for non-active tabs if not generating
+  if (state.activeTab === 'safe') {
+    ['daily','fire','weekly'].forEach(t => {
+      if (state.slipStatus[t] === 'idle') showPanel(t, 'idle');
+    });
+  }
+  
+  updateBottomBar();
+  startLivePolling();
+  fetchLiveScores();
+  
+  // Check if date changed while app was backgrounded
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      const newToday = getLocalDateStr();
+      if (newToday !== state.today) {
+        // New day — reset and regenerate
+        state.today = newToday;
+        const newWeek = getLocalWeekBounds();
+        state.weekStart = newWeek.start;
+        state.weekEnd = newWeek.end;
+        state.fixtures = [];
+        state.slips = { safe: null, daily: null, fire: null, weekly: null };
+        updateDateDisplay();
+        init();
+      }
+      fetchLiveScores();
+    }
+  });
+}
+
+// Start app
+window.addEventListener('DOMContentLoaded', init);
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

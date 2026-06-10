@@ -1162,54 +1162,16 @@ function buildUserPrompt(tabId, fixtures) {
   const weekEnd = state.weekEnd;
   const isWeekly = tabId === 'weekly';
 
-  const fixtureList = fixtures.slice(0, 100).map(f => ({
+  const fixtureList = fixtures.slice(0, 50).map(f => ({
     home: f.strHomeTeam || f.home,
     away: f.strAwayTeam || f.away,
     league: f.strLeague || f.league,
-    country: f.strCountry || f.country || '',
     date: f.dateEvent,
-    time: f.strTime || '',
-    sport: f.strSport || 'Soccer'
+    time: f.strTime || ''
   }));
 
-  const schema = `{
-  "slip": [
-    {
-      "homeTeam": "string",
-      "awayTeam": "string",
-      "sport": "Football|Tennis|Basketball|Hockey",
-      "league": "string",
-      "country": "string",
-      "matchDate": "YYYY-MM-DD",
-      "matchTime": "HH:MM",
-      "market": "string",
-      "selectedOutcome": "string",
-      "odds": 1.25,
-      "confidence": 95,
-      "riskScore": 10,
-      "factors": {
-        "motivation": "string",
-        "motivationLevel": "CRITICAL|HIGH|MEDIUM|LOW",
-        "form": "WWWWD",
-        "oppositionStrength": "DOMINANT|STRONG|EVEN|WEAK|VERY_WEAK",
-        "rotationRisk": "HIGH|MEDIUM|LOW",
-        "isDerby": false,
-        "isDeadRubber": false,
-        "isFinal": false,
-        "fixtureImportance": "string",
-        "keyFact": "string",
-        "rulesApplied": ["Dead Rubber Rule", "Rotation Risk Rule"]
-      },
-      "warning": null
-    }
-  ],
-  "combinedOdds": 1.85,
-  "averageConfidence": 94,
-  "stakeRecommendation": "string",
-  "analystNote": "string",
-  "riskLevel": "VERY_SAFE|SAFE|MODERATE|AGGRESSIVE",
-  "dateVerified": "string"
-}`;
+  // Minimal schema - prevents JSON truncation with Gemini
+  const schema = `{"slip":[{"h":"Home Team","a":"Away Team","sp":"Football","lg":"League","dt":"YYYY-MM-DD","tm":"HH:MM","mk":"Draw No Bet","out":"Home Team","od":1.35,"cf":85,"rs":10,"kf":"Key fact","ml":"HIGH","warn":null}],"co":1.85,"ac":85,"st":"$10-20","note":"Analyst note","rl":"SAFE","dv":"date"}`;
 
   let slipInstructions = '';
   if (tabId === 'safe') {
@@ -1388,8 +1350,8 @@ async function generateWeeklySplit(apiKey, systemPrompt, fixtures, weekStart, we
   const d4 = addDays(start, 4);   // Fri
   const d6 = weekEnd;             // Sun
 
-  // Compact schema - reduces output tokens significantly
-  const schema = `{"slip":[{"homeTeam":"Team A","awayTeam":"Team B","sport":"Football","league":"Liga Name","country":"Country","matchDate":"YYYY-MM-DD","matchTime":"HH:MM","market":"Draw No Bet","selectedOutcome":"Team A","odds":1.35,"confidence":82,"riskScore":12,"factors":{"motivation":"Fighting relegation","motivationLevel":"HIGH","form":"WWDLW","oppositionStrength":"WEAK","rotationRisk":"LOW","isDerby":false,"isDeadRubber":false,"isFinal":false,"fixtureImportance":"Relegation battle","keyFact":"Key fact here","rulesApplied":["Dead Rubber Rule"]},"warning":null}]}`;
+  // Ultra-compact schema to prevent truncation
+  const schema = `{"slip":[{"h":"Bayern Munich","a":"Mainz","sp":"Football","lg":"Bundesliga","dt":"YYYY-MM-DD","tm":"19:30","mk":"Draw No Bet","out":"Bayern Munich","od":1.22,"cf":88,"rs":8,"kf":"Strong home record","ml":"HIGH","warn":null}]}`;
 
   // Define fixtureHint here so it's in scope for makePrompt
   const fixtureHint = fixtures && fixtures.length > 0
@@ -1506,6 +1468,48 @@ async function generateSlip(tabId) {
     } else {
       slip = await callClaudeAPI(apiKey, systemPrompt, buildUserPrompt(tabId, fixtures), 4000, 60000);
     }
+    // === NORMALIZE: Expand Gemini's compact keys to full field names ===
+    function normalizeSlip(raw) {
+      if (!raw || !raw.slip) return raw;
+      raw.slip = raw.slip.map(m => ({
+        homeTeam:        m.homeTeam || m.h || m.home || 'Unknown',
+        awayTeam:        m.awayTeam || m.a || m.away || 'Unknown',
+        sport:           m.sport    || m.sp || 'Football',
+        league:          m.league   || m.lg || m.l || '',
+        country:         m.country  || m.c  || '',
+        matchDate:       m.matchDate|| m.dt || m.date || state.today,
+        matchTime:       m.matchTime|| m.tm || m.time || '00:00',
+        market:          m.market   || m.mk || m.mkt  || 'Draw No Bet',
+        selectedOutcome: m.selectedOutcome || m.out || m.outcome || m.homeTeam || m.h || '',
+        odds:            parseFloat(m.odds  || m.od  || m.o || 1.5),
+        confidence:      parseInt(m.confidence || m.cf || m.conf || 75),
+        riskScore:       parseInt(m.riskScore  || m.rs || 15),
+        factors: {
+          motivation:        (m.factors?.motivation)        || m.mot || 'Standard',
+          motivationLevel:   (m.factors?.motivationLevel)   || m.ml  || 'MEDIUM',
+          form:              (m.factors?.form)              || m.fm  || 'UNKNOWN',
+          oppositionStrength:(m.factors?.oppositionStrength)|| m.os  || 'EVEN',
+          rotationRisk:      (m.factors?.rotationRisk)      || m.rr  || 'LOW',
+          isDerby:           (m.factors?.isDerby)           || false,
+          isDeadRubber:      (m.factors?.isDeadRubber)      || false,
+          isFinal:           (m.factors?.isFinal)           || false,
+          fixtureImportance: (m.factors?.fixtureImportance) || m.fi  || '',
+          keyFact:           (m.factors?.keyFact)           || m.kf  || '',
+          rulesApplied:      (m.factors?.rulesApplied)      || []
+        },
+        warning: m.warning || m.warn || null
+      }));
+      // Expand top level
+      if (!raw.combinedOdds)       raw.combinedOdds       = raw.co  || raw.slip.reduce((a,m)=>a*(m.odds||1.5),1).toFixed(2);
+      if (!raw.averageConfidence)  raw.averageConfidence  = raw.ac  || Math.round(raw.slip.reduce((a,m)=>a+(m.confidence||75),0)/raw.slip.length);
+      if (!raw.stakeRecommendation)raw.stakeRecommendation= raw.st  || SLIP_CONFIG[tabId]?.stake || '';
+      if (!raw.analystNote)        raw.analystNote        = raw.note|| raw.n || 'Analysis complete.';
+      if (!raw.riskLevel)          raw.riskLevel          = raw.rl  || 'SAFE';
+      if (!raw.dateVerified)       raw.dateVerified       = raw.dv  || state.today;
+      return raw;
+    }
+    slip = normalizeSlip(slip);
+
     // === DEDUP: Remove any match already used in another slip today ===
     if (slip.slip && Array.isArray(slip.slip) && tabId !== 'weekly') {
       const beforeCount = slip.slip.length;

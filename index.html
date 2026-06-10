@@ -1145,7 +1145,13 @@ KNOWN AVOID: Porto after title (rests all). Any team with final in 72h. Invernes
 
 PERSONALITY: Reference rules by name. "Dead Rubber Rule applied - skipped." "Porto Rule - avoided." Clean slip = "No red flags detected." Thin day = say so honestly.
 
-OUTPUT: Valid JSON only. No text before or after. No markdown.`;
+OUTPUT RULES:
+- Output ONLY a raw JSON object. Zero text before or after. Zero markdown. Zero explanation.
+- Keep factor descriptions SHORT — max 5 words each.
+- Keep keyFact SHORT — max 10 words.
+- Keep analystNote SHORT — max 20 words.
+- Keep motivation SHORT — max 5 words.
+- This is critical: SHORT responses prevent truncation errors.`;
 }
 
 
@@ -1292,7 +1298,7 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
         }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: maxTokens || 3000
+          maxOutputTokens: maxTokens || 8192
         }
       })
     });

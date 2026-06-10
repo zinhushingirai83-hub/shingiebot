@@ -1292,8 +1292,7 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
         }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: maxTokens || 3000,
-          responseMimeType: 'application/json'
+          maxOutputTokens: maxTokens || 3000
         }
       })
     });

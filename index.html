@@ -1280,7 +1280,7 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 60000);
   let response;
   // Using Google Gemini free API
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   try {
     response = await fetch(geminiUrl, {
       method: 'POST',

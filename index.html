@@ -1162,291 +1162,59 @@ function buildUserPrompt(tabId, fixtures) {
   const weekEnd = state.weekEnd;
   const isWeekly = tabId === 'weekly';
 
-  const fixtureList = fixtures.slice(0, 50).map(f => ({
-    home: f.strHomeTeam || f.home,
-    away: f.strAwayTeam || f.away,
-    league: f.strLeague || f.league,
-    date: f.dateEvent,
-    time: f.strTime || ''
-  }));
+  // Build real fixture list - ONLY these are allowed
+  const realFixtures = fixtures.slice(0, 60).map(f => ({
+    home: f.strHomeTeam || f.home || '',
+    away: f.strAwayTeam || f.away || '',
+    league: f.strLeague || f.league || '',
+    country: f.strCountry || f.country || '',
+    date: f.dateEvent || today,
+    time: f.strTime || '00:00'
+  })).filter(f => f.home && f.away);
 
-  // Minimal schema - prevents JSON truncation with Gemini
-  const schema = `{"slip":[{"h":"Home Team","a":"Away Team","sp":"Football","lg":"League","dt":"YYYY-MM-DD","tm":"HH:MM","mk":"Draw No Bet","out":"Home Team","od":1.35,"cf":85,"rs":10,"kf":"Key fact","ml":"HIGH","warn":null}],"co":1.85,"ac":85,"st":"$10-20","note":"Analyst note","rl":"SAFE","dv":"date"}`;
+  // Excluded matches already used in other slips
+  const excluded = state.usedMatches.length > 0
+    ? `\nEXCLUDED (already in other slips today — do NOT pick these):\n${state.usedMatches.map((m,i) => `${i+1}. ${m}`).join('\n')}`
+    : '';
+
+  // Compact schema
+  const schema = `{"slip":[{"h":"exact home name","a":"exact away name","sp":"Football","lg":"league","dt":"${today}","tm":"HH:MM","mk":"Draw No Bet","out":"exact home or away name","od":1.35,"cf":82,"rs":10,"kf":"short reason","ml":"HIGH","warn":null}],"co":1.85,"ac":82,"st":"stake","note":"short note","rl":"SAFE","dv":"${today}"}`;
 
   let slipInstructions = '';
   if (tabId === 'safe') {
-    slipInstructions = `SLIP TYPE: 1.5 SAFE SLIP — The Bread and Butter
-CRITICAL: Every pick must be UNIQUE — not used in any other slip today. Check the exclusion list above.
-Select 2-5 picks across ANY sport (Football, Tennis, Basketball, Hockey).
-Target combined odds 1.40-1.70. Minimum confidence 76%. Risk score MUST be ≤ 20.
-FOOTBALL markets: Draw No Bet or Double Chance ONLY. Never straight win.
-TENNIS/BASKETBALL/HOCKEY: Match Winner market only. Top seed vs low seed preferred.
-Absolutely forbidden: derbies, dead rubbers, high rotation risk, risk score > 20.
-On thin days: reduce to 2 legs. Include tennis or basketball if football is scarce.
-This is Shingirai's bread and butter. Family depends on this. Zero tolerance for high-risk picks.`;
+    slipInstructions = `SLIP: 1.5 SAFE — Select 2-4 picks. Target odds 1.40-1.70. Min confidence 76%. Risk ≤ 20.
+Football: Draw No Bet or Double Chance ONLY. Tennis/Basketball/Hockey: Match Winner.
+Only clear favorites vs weak opponents. No derbies. No dead rubbers. No rotation risk.`;
   } else if (tabId === 'daily') {
-    slipInstructions = `SLIP TYPE: 2.0 DAILY SLIP — Working Slip
-CRITICAL: Every pick must be UNIQUE — not used in any other slip today. Check the exclusion list above.
-Select 3-6 picks across ANY sport. Target combined odds 1.80-2.20.
-Minimum confidence 76%. Risk score MUST be ≤ 35.
-FOOTBALL: DNB preferred, Double Chance acceptable, Straight Win if odds < 1.35.
-TENNIS/BASKETBALL/HOCKEY: Match Winner or Handicap markets.
-Forbidden: derbies, confirmed dead rubbers, risk score > 35.
-Mix sports if football fixtures are scarce. Tennis Grand Slams and ATP Masters are reliable.`;
+    slipInstructions = `SLIP: 2.0 DAILY — Select 3-5 picks. Target odds 1.80-2.20. Min confidence 76%. Risk ≤ 35.
+Football: DNB preferred, Double Chance ok, Straight Win only if odds < 1.35.
+No confirmed dead rubbers. No derbies.`;
   } else if (tabId === 'fire') {
-    slipInstructions = `SLIP TYPE: 5.0 FIRE SLIP — Recovery Slip
-CRITICAL: Every pick must be UNIQUE — not used in any other slip today. Check the exclusion list above.
-Select 3-8 picks across ANY sport. Target combined odds 4.50-6.00.
-Minimum confidence 65%. Risk score up to 60 allowed.
-ALL markets allowed: straight wins, BTTS, Over/Under, Asian Handicap, Match Winner.
-Mix sports freely. Include exciting matchups from tennis, basketball, hockey.
-Small stake ONLY — $2-3 maximum. This is recovery and dream money.`;
-  } else if (tabId === 'weekly') {
-    slipInstructions = `SLIP TYPE: WEEKLY 30 LONGBET — The Dream
-Select 28-32 picks spanning ${weekStart} to ${weekEnd}.
-Distribute 4-5 picks per day across all 7 days.
-Target combined odds 50-200+. Minimum confidence 75%. Risk score ≤ 50.
-MARKETS: Football DNB 35%, Double Chance 25%, Straight Win 15%, Tennis/Basketball/Hockey Match Winner 25%.
-Mix sports across the week — use tennis Grand Slams, NBA playoffs, NHL games as they are scheduled.
-CRITICAL: Use your football knowledge AND knowledge of tennis/basketball/hockey schedules to fill all 7 days.
-Set correct matchDate for each pick within ${weekStart} to ${weekEnd}.
-$1-2 stake maximum. Life-changing potential.`;
+    slipInstructions = `SLIP: 5.0 FIRE — Select 3-6 picks. Target odds 4.50-6.00. Min confidence 65%. Risk ≤ 60.
+All markets allowed. Mix sports freely.`;
   }
 
-  // Build exclusion list from already-used matches
-  const excluded = state.usedMatches.length > 0
-    ? `\n\nSTRICT EXCLUSION LIST — These matches are already used in other slips today. DO NOT pick any of them under any circumstances:\n${state.usedMatches.map((m,i) => `${i+1}. ${m}`).join('\n')}`
-    : '';
+  return `You are ShingieBot analyst for Shingirai Zinhu. Today: ${today}.
 
-  const fixtureSection = fixtureList.length > 0
-    ? `FIXTURES FROM API (${fixtureList.length} matches found for today/this period):
-${JSON.stringify(fixtureList, null, 2)}
+⚠️ CRITICAL RULE — ZERO HALLUCINATION:
+You may ONLY pick matches from the REAL FIXTURES list below.
+Do NOT invent matches. Do NOT use your training data for fixtures.
+Do NOT pick matches from memory. ONLY use what is in this list.
+If fewer than 2 fixtures qualify, say so honestly — never make up games.
+Every pick's homeTeam and awayTeam MUST exactly match a name in the fixture list.
+Every pick's matchDate MUST exactly match the fixture's date.
 
-Use these fixtures as your primary source. You may ALSO use your own knowledge of scheduled matches this ${isWeekly ? 'week' : 'day'} for sports not in this list (tennis, basketball, hockey tournaments).${excluded}`
-    : `NOTE: The fixture API returned limited results today. Use your knowledge of today's scheduled matches across football, tennis, basketball, and hockey to generate picks. You know what is scheduled — use it.${excluded}`;
-
-  return `Today: ${today}
-${isWeekly ? `Week: ${weekStart} to ${weekEnd}` : ''}
-
-${fixtureSection}
+REAL FIXTURES FOR TODAY (${realFixtures.length} available):
+${JSON.stringify(realFixtures)}
+${excluded}
 
 ${slipInstructions}
 
-Apply ALL 14 rules. Score each fixture for risk before selecting. Report riskScore in output.
-Include sport field for every pick. Use your knowledge of tennis/basketball/hockey to supplement thin fixture lists.
-${isWeekly ? `Spread picks across all 7 days. Include matchDate for every pick.` : `Every pick MUST have matchDate = "${today}".`}
+Apply rules: dead rubber, derby exclusion, rotation risk, motivation, Porto rule.
+Picks must use EXACT team names from the fixture list above.
 
-Respond with this exact JSON schema only — no other text:
+Output ONLY raw JSON matching this schema (no markdown, no explanation):
 ${schema}`;
-}
-
-
-
-// ---- Claude API call helper ----
-// Track last API call time to respect rate limits
-let lastApiCallTime = 0;
-
-async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeoutMs) {
-  // Enforce minimum 7 seconds between calls to stay under 10 RPM free tier limit
-  const minGap = 7000;
-  const now = Date.now();
-  const elapsed = now - lastApiCallTime;
-  if (elapsed < minGap && lastApiCallTime > 0) {
-    await new Promise(r => setTimeout(r, minGap - elapsed));
-  }
-  lastApiCallTime = Date.now();
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 60000);
-  let response;
-  // Using Google Gemini free API
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  try {
-    response = await fetch(geminiUrl, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: maxTokens || 8192
-        }
-      })
-    });
-  } catch(err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error('Request timed out. Tap Retry.');
-    throw new Error('Network error: ' + err.message);
-  }
-  clearTimeout(timeoutId);
-  if (!response.ok) {
-    let msg = 'Gemini API error ' + response.status;
-    try { const d = await response.json(); msg = d.error?.message || msg; } catch(e) {}
-    if (msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('limit')) {
-      const rm = msg.match(/retry in ([\d.]+)s/i);
-      const secs = rm ? Math.ceil(parseFloat(rm[1])) : 60;
-      throw new Error('Rate limit hit. Wait ' + secs + 's then tap Retry. Free tier = 10 req/min.');
-    }
-    throw new Error(msg);
-  }
-  const data = await response.json();
-  let raw = '';
-  try { raw = data.candidates[0].content.parts[0].text; } catch(e) { throw new Error('Empty response from Gemini'); }
-  // Strip markdown code blocks
-  raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  // Try direct parse first
-  try { return JSON.parse(raw); } catch(e) {}
-  // Try extracting the outermost JSON object
-  const objMatch = raw.match(/\{[\s\S]*\}/);
-  if (objMatch) {
-    try { return JSON.parse(objMatch[0]); } catch(e) {}
-    // Try to recover truncated JSON
-    let partial = objMatch[0];
-    // Try appending common closings
-    for (const tail of [']}', ']\n}', '\n  ]\n}', ']}\n']) {
-      try { return JSON.parse(partial + tail); } catch(e) {}
-    }
-    // Find last complete object in the slip array
-    const lastBrace = partial.lastIndexOf('}');
-    if (lastBrace > 10) {
-      const truncated = partial.substring(0, lastBrace + 1);
-      for (const tail of [']}', ']\n}']) {
-        try { return JSON.parse(truncated + tail); } catch(e) {}
-      }
-    }
-    // Extract any valid slip items using regex
-    const slipItems = [];
-    const rx = /\{"homeTeam"[^}]+(?:\{[^}]*\}[^}]*)*\}/g;
-    let hit;
-    while ((hit = rx.exec(partial)) !== null) {
-      try { slipItems.push(JSON.parse(hit[0])); } catch(e) {}
-    }
-    if (slipItems.length > 0) return { slip: slipItems };
-  }
-  // Last resort: try to build valid JSON from what we got
-  // Find all complete objects in the slip array
-  const slipMatch = raw.match(/"slip"\s*:\s*\[([\s\S]*?)\]\s*[,}]/);
-  if (slipMatch) {
-    try {
-      // Try to close any open object
-      let items = slipMatch[1].trim();
-      if (!items.endsWith('}')) {
-        const lastClose = items.lastIndexOf('}');
-        if (lastClose > 0) items = items.substring(0, lastClose + 1);
-      }
-      const recovered = JSON.parse(`{"slip":[${items}]}`);
-      if (recovered.slip && recovered.slip.length > 0) {
-        recovered.combinedOdds = recovered.slip.reduce((a,m)=>a*(parseFloat(m.odds)||1.4),1);
-        recovered.averageConfidence = Math.round(recovered.slip.reduce((a,m)=>a+(m.confidence||75),0)/recovered.slip.length);
-        recovered.analystNote = 'Recovered partial response.';
-        recovered.riskLevel = 'MODERATE';
-        recovered.stakeRecommendation = 'Verify picks manually.';
-        return recovered;
-      }
-    } catch(e) {}
-  }
-  throw new Error('Invalid JSON from Claude: ' + raw.substring(0, 150));
-}
-
-// ---- Weekly: single independent call ----
-async function generateWeeklySingle(apiKey, systemPrompt, weekStart, weekEnd) {
-  const prompt = `You are ShingieBot. Generate a weekly longbet slip for Shingirai Zinhu.
-Week: ${weekStart} to ${weekEnd} (Monday to Sunday).
-Select 18-20 picks spread across all 7 days (2-3 per day).
-Sports: Football, Tennis, Basketball, Hockey — mix freely.
-Use your knowledge of real scheduled matches this week.
-Rules: no dead rubbers, no derbies in safe markets, check motivation, no Porto teams after title.
-Markets: Football=DNB preferred. Tennis/Basketball/Hockey=Match Winner.
-Min confidence 72%. Each pick needs correct matchDate within ${weekStart} to ${weekEnd}.
-DO NOT pick matches before today (${weekStart}).
-
-Output ONLY raw JSON. No markdown. No explanation. Use this compact format:
-{"slip":[{"h":"Team A","a":"Team B","sp":"Football","lg":"League","dt":"${weekStart}","tm":"20:00","mk":"Draw No Bet","out":"Team A","od":1.35,"cf":82,"rs":10,"kf":"Strong home form","ml":"HIGH","warn":null},{"h":"Novak Djokovic","a":"Carlos Alcaraz","sp":"Tennis","lg":"French Open","dt":"${weekStart}","tm":"14:00","mk":"Match Winner","out":"Carlos Alcaraz","od":1.45,"cf":78,"rs":12,"kf":"Better clay form","ml":"HIGH","warn":null}]}`;
-
-  return await callClaudeAPI(apiKey, systemPrompt, prompt, 6000, 90000);
-}
-
-// ---- Weekly split: 2 calls of ~15 legs each ----
-async function generateWeeklySplit(apiKey, systemPrompt, fixtures, weekStart, weekEnd) {
-  // Split week into 3 parts to avoid JSON truncation
-  // Part 1: Mon-Tue, Part 2: Wed-Thu, Part 3: Fri-Sun
-  const start = new Date(weekStart + 'T12:00:00');
-
-  function addDays(d, n) {
-    const r = new Date(d); r.setDate(r.getDate() + n);
-    return `${r.getFullYear()}-${String(r.getMonth()+1).padStart(2,'0')}-${String(r.getDate()).padStart(2,'0')}`;
-  }
-
-  const d0 = weekStart;           // Mon
-  const d2 = addDays(start, 2);   // Wed
-  const d4 = addDays(start, 4);   // Fri
-  const d6 = weekEnd;             // Sun
-
-  // Ultra-compact schema to prevent truncation
-  const schema = `{"slip":[{"h":"Bayern Munich","a":"Mainz","sp":"Football","lg":"Bundesliga","dt":"YYYY-MM-DD","tm":"19:30","mk":"Draw No Bet","out":"Bayern Munich","od":1.22,"cf":88,"rs":8,"kf":"Strong home record","ml":"HIGH","warn":null}]}`;
-
-  // Define fixtureHint here so it's in scope for makePrompt
-  const fixtureHint = fixtures && fixtures.length > 0
-    ? `Known fixtures: ${JSON.stringify(fixtures.slice(0,15).map(f=>({home:f.strHomeTeam||f.home,away:f.strAwayTeam||f.away,league:f.strLeague||f.league,date:f.dateEvent})))}`
-    : `Use your knowledge of this week's scheduled matches.`;
-
-  function makePrompt(dateFrom, dateTo, dayRange, part) {
-    const hint = part === 1 ? fixtureHint : 'Pick completely different matches from previous parts. No repeats.';
-    return `ShingieBot weekly slip PART ${part}/3 for Shingirai Zinhu.
-Date range: ${dateFrom} to ${dateTo} (${dayRange}).
-Select exactly 6 picks for this period (2-3 per day).
-Mix sports: Football, Tennis, Basketball, Hockey.
-Rules: skip dead rubbers, derbies, rotation risk, no-stakes teams.
-Markets: Football=DNB/Double Chance. Tennis/Basketball/Hockey=Match Winner.
-Minimum confidence 72%. Use your knowledge of real matches this week.
-Each pick must have matchDate within ${dateFrom} to ${dateTo}.
-${hint}
-Output ONLY a raw JSON object. No markdown. No explanation. Example structure:
-{"slip":[{"homeTeam":"Bayern Munich","awayTeam":"Mainz","sport":"Football","league":"Bundesliga","country":"Germany","matchDate":"${dateFrom}","matchTime":"19:30","market":"Draw No Bet","selectedOutcome":"Bayern Munich","odds":1.22,"confidence":88,"riskScore":8,"factors":{"motivation":"Title race","motivationLevel":"HIGH","form":"WWWWW","oppositionStrength":"VERY_WEAK","rotationRisk":"LOW","isDerby":false,"isDeadRubber":false,"isFinal":false,"fixtureImportance":"Title decider","keyFact":"Bayern unbeaten at home this season","rulesApplied":["Motivation Rule"]},"warning":null}]}`;
-  }
-
-  const p1 = makePrompt(d0, addDays(start,1), 'Mon-Tue', 1);
-  const p2 = makePrompt(d2, addDays(start,3), 'Wed-Thu', 2);
-  const p3 = makePrompt(d4, d6, 'Fri-Sun', 3);
-
-  showPanel('weekly', 'loading', null, 'Generating Mon–Tue picks... (1/3)');
-  let part1, part2, part3;
-  try { part1 = await callClaudeAPI(apiKey, systemPrompt, p1, 4000, 55000); } catch(e) { part1 = {slip:[]}; console.error("Part1 failed:", e); }
-
-  showPanel('weekly', 'loading', null, 'Generating Wed–Thu picks... (2/3)');
-  try { part2 = await callClaudeAPI(apiKey, systemPrompt, p2, 4000, 55000); } catch(e) { part2 = {slip:[]}; console.error("Part2 failed:", e); }
-
-  showPanel('weekly', 'loading', null, 'Generating Fri–Sun picks... (3/3)');
-  try { part3 = await callClaudeAPI(apiKey, systemPrompt, p3, 4000, 55000); } catch(e) { part3 = {slip:[]}; console.error("Part3 failed:", e); }
-
-  // Merge all legs, remove duplicates
-  const seen = new Set();
-  const allLegs = [];
-  for (const leg of [...(part1.slip||[]), ...(part2.slip||[]), ...(part3.slip||[])]) {
-    const key = `${leg.homeTeam}|${leg.awayTeam}`;
-    if (!seen.has(key) && leg.homeTeam && leg.awayTeam) {
-      seen.add(key);
-      allLegs.push(leg);
-    }
-  }
-
-  if (allLegs.length === 0) throw new Error('Weekly generation returned no picks across all 3 parts. Tap Retry.');
-
-  const combinedOdds = Math.round(allLegs.reduce((a, m) => a * (parseFloat(m.odds) || 1.4), 1) * 100) / 100;
-  const avgConf = Math.round(allLegs.reduce((a, m) => a + (m.confidence || 75), 0) / allLegs.length);
-
-  return {
-    slip: allLegs,
-    combinedOdds,
-    averageConfidence: avgConf,
-    stakeRecommendation: '$1–$2 MAXIMUM. Dream slip — life changing potential.',
-    analystNote: `Weekly mega slip: ${allLegs.length} legs across ${weekStart} to ${weekEnd}. Football, tennis, basketball and hockey combined. Stake $1-$2 only. This is dream money.`,
-    riskLevel: 'MODERATE',
-    dateVerified: `${weekStart} to ${weekEnd}`
-  };
 }
 
 
@@ -1545,6 +1313,36 @@ async function generateSlip(tabId) {
     }
     slip = normalizeSlip(slip);
 
+    // === REAL FIXTURE VALIDATION: Remove hallucinated matches ===
+    if (slip.slip && Array.isArray(slip.slip) && tabId !== 'weekly') {
+      const realKeys = new Set(fixtures.map(f => {
+        const h = (f.strHomeTeam || f.home || '').toLowerCase().trim();
+        const a = (f.strAwayTeam || f.away || '').toLowerCase().trim();
+        return h + '|' + a;
+      }));
+      const beforeHalluc = slip.slip.length;
+      slip.slip = slip.slip.filter(m => {
+        const h = (m.homeTeam || '').toLowerCase().trim();
+        const a = (m.awayTeam || '').toLowerCase().trim();
+        // Check exact match
+        if (realKeys.has(h + '|' + a)) return true;
+        // Check partial match (team name contained in fixture name)
+        for (const key of realKeys) {
+          const [rh, ra] = key.split('|');
+          if ((rh.includes(h) || h.includes(rh)) && (ra.includes(a) || a.includes(ra))) return true;
+        }
+        console.warn('Hallucinated match removed:', m.homeTeam, 'vs', m.awayTeam);
+        return false;
+      });
+      if (beforeHalluc > slip.slip.length) {
+        console.log(`Hallucination filter: removed ${beforeHalluc - slip.slip.length} fake matches`);
+      }
+      // If all picks were hallucinated, show honest error
+      if (slip.slip.length === 0) {
+        throw new Error(`Only ${fixtures.length} real fixtures available today and none qualified after applying rules. This is a very thin day. Try again later or check back tomorrow.`);
+      }
+    }
+
     // === KICKOFF FILTER: Remove matches that already started (for daily slips) ===
     if (slip.slip && Array.isArray(slip.slip) && tabId !== 'weekly') {
       const nowMs = Date.now();
@@ -1569,7 +1367,8 @@ async function generateSlip(tabId) {
         return !state.usedMatches.includes(key);
       });
       if (slip.slip.length === 0 && beforeCount > 0) {
-        throw new Error('All picks were already used in other slips today. ShingieBot needs more unique fixtures. Try refreshing or come back later.');
+        console.log('All picks used in other slips — showing what remains');
+      // Don't throw — just proceed with empty slip and show message
       }
       // Recalculate combined odds after dedup
       if (slip.slip.length > 0) {

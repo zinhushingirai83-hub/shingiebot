@@ -1351,6 +1351,24 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
   throw new Error('Invalid JSON from Claude: ' + raw.substring(0, 150));
 }
 
+// ---- Weekly: single independent call ----
+async function generateWeeklySingle(apiKey, systemPrompt, weekStart, weekEnd) {
+  const prompt = `You are ShingieBot. Generate a weekly longbet slip for Shingirai Zinhu.
+Week: ${weekStart} to ${weekEnd} (Monday to Sunday).
+Select 18-20 picks spread across all 7 days (2-3 per day).
+Sports: Football, Tennis, Basketball, Hockey — mix freely.
+Use your knowledge of real scheduled matches this week.
+Rules: no dead rubbers, no derbies in safe markets, check motivation, no Porto teams after title.
+Markets: Football=DNB preferred. Tennis/Basketball/Hockey=Match Winner.
+Min confidence 72%. Each pick needs correct matchDate within ${weekStart} to ${weekEnd}.
+DO NOT pick matches before today (${weekStart}).
+
+Output ONLY raw JSON. No markdown. No explanation. Use this compact format:
+{"slip":[{"h":"Team A","a":"Team B","sp":"Football","lg":"League","dt":"${weekStart}","tm":"20:00","mk":"Draw No Bet","out":"Team A","od":1.35,"cf":82,"rs":10,"kf":"Strong home form","ml":"HIGH","warn":null},{"h":"Novak Djokovic","a":"Carlos Alcaraz","sp":"Tennis","lg":"French Open","dt":"${weekStart}","tm":"14:00","mk":"Match Winner","out":"Carlos Alcaraz","od":1.45,"cf":78,"rs":12,"kf":"Better clay form","ml":"HIGH","warn":null}]}`;
+
+  return await callClaudeAPI(apiKey, systemPrompt, prompt, 6000, 90000);
+}
+
 // ---- Weekly split: 2 calls of ~15 legs each ----
 async function generateWeeklySplit(apiKey, systemPrompt, fixtures, weekStart, weekEnd) {
   // Split week into 3 parts to avoid JSON truncation
@@ -1481,7 +1499,7 @@ async function generateSlip(tabId) {
     let slip;
     // Weekly: 2 split calls to avoid timeout. Daily/Safe/Fire: single call.
     if (tabId === 'weekly') {
-      slip = await generateWeeklySplit(apiKey, systemPrompt, fixtures, state.weekStart, state.weekEnd);
+      slip = await generateWeeklySingle(apiKey, systemPrompt, state.weekStart, state.weekEnd);
     } else {
       slip = await callClaudeAPI(apiKey, systemPrompt, buildUserPrompt(tabId, fixtures), 4000, 60000);
     }
@@ -1526,6 +1544,22 @@ async function generateSlip(tabId) {
       return raw;
     }
     slip = normalizeSlip(slip);
+
+    // === KICKOFF FILTER: Remove matches that already started (for daily slips) ===
+    if (slip.slip && Array.isArray(slip.slip) && tabId !== 'weekly') {
+      const nowMs = Date.now();
+      slip.slip = slip.slip.filter(m => {
+        if (!m.matchDate || !m.matchTime || m.matchTime === '00:00') return true;
+        try {
+          const kickoff = new Date(`${m.matchDate}T${m.matchTime}:00+02:00`);
+          if ((nowMs - kickoff.getTime()) > 10 * 60 * 1000) {
+            console.log('Removed - already started:', m.homeTeam, 'vs', m.awayTeam, m.matchTime);
+            return false;
+          }
+        } catch(e) {}
+        return true;
+      });
+    }
 
     // === DEDUP: Remove any match already used in another slip today ===
     if (slip.slip && Array.isArray(slip.slip) && tabId !== 'weekly') {

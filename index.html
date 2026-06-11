@@ -1243,7 +1243,19 @@ ${schema}`;
 
 
 // ---- Claude API call helper ----
+// Track last API call time to respect rate limits
+let lastApiCallTime = 0;
+
 async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeoutMs) {
+  // Enforce minimum 7 seconds between calls to stay under 10 RPM free tier limit
+  const minGap = 7000;
+  const now = Date.now();
+  const elapsed = now - lastApiCallTime;
+  if (elapsed < minGap && lastApiCallTime > 0) {
+    await new Promise(r => setTimeout(r, minGap - elapsed));
+  }
+  lastApiCallTime = Date.now();
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 60000);
   let response;
@@ -1273,6 +1285,11 @@ async function callClaudeAPI(apiKey, systemPrompt, userPrompt, maxTokens, timeou
   if (!response.ok) {
     let msg = 'Gemini API error ' + response.status;
     try { const d = await response.json(); msg = d.error?.message || msg; } catch(e) {}
+    if (msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('limit')) {
+      const rm = msg.match(/retry in ([\d.]+)s/i);
+      const secs = rm ? Math.ceil(parseFloat(rm[1])) : 60;
+      throw new Error('Rate limit hit. Wait ' + secs + 's then tap Retry. Free tier = 10 req/min.');
+    }
     throw new Error(msg);
   }
   const data = await response.json();
@@ -1565,26 +1582,27 @@ async function loadOrGenerateSlip(tabId) {
   if (cfg.daily) {
     const cacheKey = getSlipKey(tabId, state.today);
     const cached = loadData(cacheKey);
-    if (cached && cached.generatedDate === state.today && cached.slip) {
+    if (cached && cached.generatedDate === state.today && cached.slip && cached.slip.slip && cached.slip.slip.length > 0) {
       state.slips[tabId] = cached.slip;
       setSlipStatus(tabId, 'ready');
       if (state.activeTab === tabId) renderSlip(tabId);
       updateBottomBar();
+      console.log(tabId + ' loaded from cache — saved API quota');
       return;
     }
   } else {
-    // Weekly: load if same week
     const cached = loadData(getWeeklyKey());
-    if (cached && cached.weekStart === state.weekStart && cached.slip) {
+    if (cached && cached.weekStart === state.weekStart && cached.slip && cached.slip.slip && cached.slip.slip.length > 0) {
       state.slips[tabId] = cached.slip;
       setSlipStatus(tabId, 'ready');
       if (state.activeTab === tabId) renderSlip(tabId);
       updateBottomBar();
+      console.log('weekly loaded from cache — saved API quota');
       return;
     }
   }
   
-  // Need to generate
+  // Only auto-generate safe slip on startup — others wait for tab tap
   if (state.activeTab === tabId || tabId === 'safe') {
     generateSlip(tabId);
   } else {
